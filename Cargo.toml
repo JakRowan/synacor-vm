@@ -1,7 +1,7 @@
 [package]
 name = "synacor"
 description = "Virtual Machine Implementation for the Synacor Challenge"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Jak Rowan <jak@rowan.li>"]
 repository = "git@github.com:JakRowan/synacor-vm.git"
 readme = "README.md"
