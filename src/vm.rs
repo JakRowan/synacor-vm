@@ -21,6 +21,7 @@ enum OpCode {
     Call = 17,
     Ret = 18,
     Out = 19,
+    In = 20,
     Noop = 21,
 }
 
@@ -49,6 +50,7 @@ impl OpCode {
             17 => Some(Call),
             18 => Some(Ret),
             19 => Some(Out),
+            20 => Some(In),
             21 => Some(Noop),
             _ => None,
         }
@@ -227,6 +229,17 @@ impl VirtualMachine {
                 Some(Out) => {
                     let arg = self.read_next_mem(&mut ptr);
                     print!("{}", arg);
+                }
+                Some(In) => {
+                    use std::io;
+                    use std::io::Read;
+                    let register = self.next_mem_raw(&mut ptr);
+
+                    let c = io::stdin().bytes().next()
+                        .expect("No char received from stdin")
+                        .expect("Error reading char from stdin");
+
+                    self.write_register(register, u15::new(c as usize));
                 }
                 Some(Noop) => {}
                 None => panic!("Operation \"{}\" not valid", self.mem[ptr]),
