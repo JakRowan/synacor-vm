@@ -3,6 +3,93 @@ use std::{char, fmt, ops};
 const FIFTEEN_BIT_MODULUS: usize = 32768;
 pub const FIFTEEN_BIT_MAX: usize = (FIFTEEN_BIT_MODULUS as usize) - 1;
 
+pub enum OpCode {
+    Halt = 0,
+    Set = 1,
+    Push = 2,
+    Pop = 3,
+    Eq = 4,
+    Gt = 5,
+    Jmp = 6,
+    Jt = 7,
+    Jf = 8,
+    Add = 9,
+    Mult = 10,
+    Mod = 11,
+    And = 12,
+    Or = 13,
+    Not = 14,
+    Rmem = 15,
+    Wmem = 16,
+    Call = 17,
+    Ret = 18,
+    Out = 19,
+    In = 20,
+    Noop = 21,
+}
+
+impl OpCode {
+    pub fn from_str(val: &str) -> Option<OpCode> {
+        use self::OpCode::*;
+
+        match val {
+            "HALT" => Some(Halt),
+            "SET" => Some(Set),
+            "PUSH" => Some(Push),
+            "POP" => Some(Pop),
+            "EQ" => Some(Eq),
+            "GT" => Some(Gt),
+            "JMP" => Some(Jmp),
+            "JT" => Some(Jt),
+            "JF" => Some(Jf),
+            "ADD" => Some(Add),
+            "MULT" => Some(Mult),
+            "MOD" => Some(Mod),
+            "AND" => Some(And),
+            "OR" => Some(Or),
+            "NOT" => Some(Not),
+            "RMEM" => Some(Rmem),
+            "WMEM" => Some(Wmem),
+            "CALL" => Some(Call),
+            "RET" => Some(Ret),
+            "OUT" => Some(Out),
+            "IN" => Some(In),
+            "NOOP" => Some(Noop),
+            _ => None,
+        }
+    }
+
+    pub fn from_u16(val: u16) -> Option<OpCode> {
+        use self::OpCode::*;
+
+        match val {
+            0 => Some(Halt),
+            1 => Some(Set),
+            2 => Some(Push),
+            3 => Some(Pop),
+            4 => Some(Eq),
+            5 => Some(Gt),
+            6 => Some(Jmp),
+            7 => Some(Jt),
+            8 => Some(Jf),
+            9 => Some(Add),
+            10 => Some(Mult),
+            11 => Some(Mod),
+            12 => Some(And),
+            13 => Some(Or),
+            14 => Some(Not),
+            15 => Some(Rmem),
+            16 => Some(Wmem),
+            17 => Some(Call),
+            18 => Some(Ret),
+            19 => Some(Out),
+            20 => Some(In),
+            21 => Some(Noop),
+            _ => None,
+        }
+    }
+}
+
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct u15(usize);
@@ -17,6 +104,10 @@ impl u15 {
         u15(num)
     }
 
+    pub fn is_zero(&self) -> bool {
+        self.0 == 0
+    }
+
     pub fn to_u16(self) -> u16 {
         self.0 as u16
     }
@@ -25,12 +116,9 @@ impl u15 {
         self.0
     }
 
-    pub fn is_zero(&self) -> bool {
-        self.0 == 0
-    }
-
     fn op_and_modulo<F>(self, other: u15, f: F) -> u15
-      where F: Fn(usize, usize) -> usize
+    where
+        F: Fn(usize, usize) -> usize,
     {
         let result = f(self.0, other.0) % FIFTEEN_BIT_MODULUS;
         u15(result)

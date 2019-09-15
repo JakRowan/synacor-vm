@@ -1,61 +1,4 @@
-use types::{u15, FIFTEEN_BIT_MAX};
-
-enum OpCode {
-    Halt = 0,
-    Set = 1,
-    Push = 2,
-    Pop = 3,
-    Eq = 4,
-    Gt = 5,
-    Jmp = 6,
-    Jt = 7,
-    Jf = 8,
-    Add = 9,
-    Mult = 10,
-    Mod = 11,
-    And = 12,
-    Or = 13,
-    Not = 14,
-    Rmem = 15,
-    Wmem = 16,
-    Call = 17,
-    Ret = 18,
-    Out = 19,
-    In = 20,
-    Noop = 21,
-}
-
-impl OpCode {
-    fn from_u16(num: u16) -> Option<OpCode> {
-        use self::OpCode::*;
-
-        match num {
-            0 => Some(Halt),
-            1 => Some(Set),
-            2 => Some(Push),
-            3 => Some(Pop),
-            4 => Some(Eq),
-            5 => Some(Gt),
-            6 => Some(Jmp),
-            7 => Some(Jt),
-            8 => Some(Jf),
-            9 => Some(Add),
-            10 => Some(Mult),
-            11 => Some(Mod),
-            12 => Some(And),
-            13 => Some(Or),
-            14 => Some(Not),
-            15 => Some(Rmem),
-            16 => Some(Wmem),
-            17 => Some(Call),
-            18 => Some(Ret),
-            19 => Some(Out),
-            20 => Some(In),
-            21 => Some(Noop),
-            _ => None,
-        }
-    }
-}
+use types::{u15, OpCode, FIFTEEN_BIT_MAX};
 
 pub struct VirtualMachine {
     mem: [u16; FIFTEEN_BIT_MAX],
@@ -92,162 +35,179 @@ impl VirtualMachine {
     }
 
     pub fn execute(mut self) {
-        use self::OpCode::*;
         let mut ptr = 0;
 
         while ptr <= FIFTEEN_BIT_MAX {
-            match OpCode::from_u16(self.mem[ptr]) {
-                Some(Halt) => return,
-                Some(Set) => {
-                    let register = self.next_mem_raw(&mut ptr);
-                    let val = self.read_next_mem(&mut ptr);
-
-                    self.write_register(register, val);
-                }
-                Some(Eq) => {
-                    let register = self.next_mem_raw(&mut ptr);
-                    let eq_a = self.read_next_mem(&mut ptr);
-                    let eq_b = self.read_next_mem(&mut ptr);
-
-                    let is_equal = if eq_a == eq_b { 1 } else { 0 };
-
-                    self.write_register(register, u15::new(is_equal));
-                }
-                Some(Gt) => {
-                    let register = self.next_mem_raw(&mut ptr);
-                    let compare_a = self.read_next_mem(&mut ptr);
-                    let compare_b = self.read_next_mem(&mut ptr);
-
-                    let is_greater = if compare_a > compare_b { 1 } else { 0 };
-
-                    self.write_register(register, u15::new(is_greater));
-                }
-                Some(Push) => {
-                    let val = self.read_next_mem(&mut ptr);
-
-                    self.stack.push(val);
-                }
-                Some(Pop) => {
-                    let register = self.next_mem_raw(&mut ptr);
-                    let val = self.stack.pop()
-                        .expect("Cannot POP off of an empty stack!");
-
-                    self.write_register(register, val);
-                }
-                Some(Jmp) => {
-                    ptr = self.read_next_mem(&mut ptr).to_usize();
-                    continue;
-                }
-                Some(Jt) => {
-                    let condition = self.read_next_mem(&mut ptr);
-                    let new_position = self.next_mem_raw(&mut ptr);
-
-                    if !condition.is_zero() {
-                        ptr = new_position as usize;
-                        continue;
-                    }
-                }
-                Some(Jf) => {
-                    let condition = self.read_next_mem(&mut ptr);
-                    let new_position = self.next_mem_raw(&mut ptr);
-
-                    if condition.is_zero() {
-                        ptr = new_position as usize;
-                        continue;
-                    }
-                }
-                Some(Mult) => {
-                    let register = self.next_mem_raw(&mut ptr);
-                    let mult_a = self.read_next_mem(&mut ptr);
-                    let mult_b = self.read_next_mem(&mut ptr);
-
-                    self.write_register(register, mult_a * mult_b);
-                }
-                Some(Mod) => {
-                    let register = self.next_mem_raw(&mut ptr);
-                    let mod_a = self.read_next_mem(&mut ptr);
-                    let mod_b = self.read_next_mem(&mut ptr);
-
-                    self.write_register(register, mod_a % mod_b);
-                }
-                Some(Add) => {
-                    let register = self.next_mem_raw(&mut ptr);
-                    let add_a = self.read_next_mem(&mut ptr);
-                    let add_b = self.read_next_mem(&mut ptr);
-
-                    self.write_register(register, add_a + add_b);
-                }
-                Some(And) => {
-                    let register = self.next_mem_raw(&mut ptr);
-                    let bit_a = self.read_next_mem(&mut ptr);
-                    let bit_b = self.read_next_mem(&mut ptr);
-
-                    self.write_register(register, bit_a & bit_b);
-                }
-                Some(Or) => {
-                    let register = self.next_mem_raw(&mut ptr);
-                    let bit_a = self.read_next_mem(&mut ptr);
-                    let bit_b = self.read_next_mem(&mut ptr);
-
-                    self.write_register(register, bit_a | bit_b);
-                }
-                Some(Not) => {
-                    let register = self.next_mem_raw(&mut ptr);
-                    let val = self.read_next_mem(&mut ptr);
-
-                    self.write_register(register, !val);
-                }
-                Some(Rmem) => {
-                    let register = self.next_mem_raw(&mut ptr);
-                    let address = self.read_next_mem(&mut ptr).to_usize();
-                    let val = u15::new(self.mem[address] as usize);
-
-                    self.write_register(register, val);
-                }
-                Some(Wmem) => {
-                    let address = self.read_next_mem(&mut ptr);
-                    let val = self.read_next_mem(&mut ptr);
-
-                    self.write_mem(address.to_usize(), val);
-                }
-                Some(Call) => {
-                    let position = self.read_next_mem(&mut ptr).to_usize();
-                    let next_instruction = ptr + 1;
-
-                    self.stack.push(u15::new(next_instruction));
-                    ptr = position;
-                    continue;
-                }
-                Some(Ret) => {
-                    let address = match self.stack.pop() {
-                        Some(addr) => addr,
-                        None => return,
-                    };
-                    ptr = address.to_usize();
-                    continue;
-                }
-                Some(Out) => {
-                    let arg = self.read_next_mem(&mut ptr);
-                    print!("{}", arg);
-                }
-                Some(In) => {
-                    use std::io;
-                    use std::io::Read;
-                    let register = self.next_mem_raw(&mut ptr);
-
-                    let c = io::stdin().bytes().next()
-                        .expect("No char received from stdin")
-                        .expect("Error reading char from stdin");
-
-                    self.write_register(register, u15::new(c as usize));
-                }
-                Some(Noop) => {}
-                None => panic!("Operation \"{}\" not valid", self.mem[ptr]),
-            }
-
-            ptr += 1;
+            ptr = self.step_single_instruction(&mut ptr);
         }
     }
+
+    pub fn step_single_instruction(&mut self, ptr: &mut usize) -> usize {
+        use types::OpCode::*;
+
+        match OpCode::from_u16(self.mem[*ptr]) {
+            Some(Halt) => return FIFTEEN_BIT_MAX + 1,
+            Some(Set) => {
+                let register = self.next_mem_raw(ptr);
+                let val = self.read_next_mem(ptr);
+
+                self.write_register(register, val);
+            }
+            Some(Eq) => {
+                let register = self.next_mem_raw(ptr);
+                let eq_a = self.read_next_mem(ptr);
+                let eq_b = self.read_next_mem(ptr);
+
+                let is_equal = if eq_a == eq_b { 1 } else { 0 };
+
+                self.write_register(register, u15::new(is_equal));
+            }
+            Some(Gt) => {
+                let register = self.next_mem_raw(ptr);
+                let compare_a = self.read_next_mem(ptr);
+                let compare_b = self.read_next_mem(ptr);
+
+                let is_greater = if compare_a > compare_b { 1 } else { 0 };
+
+                self.write_register(register, u15::new(is_greater));
+            }
+            Some(Push) => {
+                let val = self.read_next_mem(ptr);
+
+                self.stack.push(val);
+            }
+            Some(Pop) => {
+                let register = self.next_mem_raw(ptr);
+                let val = self.stack.pop().expect("Cannot POP off of an empty stack!");
+
+                self.write_register(register, val);
+            }
+            Some(Jmp) => {
+                return self.read_next_mem(ptr).to_usize();
+            }
+            Some(Jt) => {
+                let condition = self.read_next_mem(ptr);
+                let new_position = self.next_mem_raw(ptr);
+
+                if !condition.is_zero() {
+                    return new_position as usize;
+                }
+            }
+            Some(Jf) => {
+                let condition = self.read_next_mem(ptr);
+                let new_position = self.next_mem_raw(ptr);
+
+                if condition.is_zero() {
+                    return new_position as usize;
+                }
+            }
+            Some(Mult) => {
+                let register = self.next_mem_raw(ptr);
+                let mult_a = self.read_next_mem(ptr);
+                let mult_b = self.read_next_mem(ptr);
+
+                self.write_register(register, mult_a * mult_b);
+            }
+            Some(Mod) => {
+                let register = self.next_mem_raw(ptr);
+                let mod_a = self.read_next_mem(ptr);
+                let mod_b = self.read_next_mem(ptr);
+
+                self.write_register(register, mod_a % mod_b);
+            }
+            Some(Add) => {
+                let register = self.next_mem_raw(ptr);
+                let add_a = self.read_next_mem(ptr);
+                let add_b = self.read_next_mem(ptr);
+
+                self.write_register(register, add_a + add_b);
+            }
+            Some(And) => {
+                let register = self.next_mem_raw(ptr);
+                let bit_a = self.read_next_mem(ptr);
+                let bit_b = self.read_next_mem(ptr);
+
+                self.write_register(register, bit_a & bit_b);
+            }
+            Some(Or) => {
+                let register = self.next_mem_raw(ptr);
+                let bit_a = self.read_next_mem(ptr);
+                let bit_b = self.read_next_mem(ptr);
+
+                self.write_register(register, bit_a | bit_b);
+            }
+            Some(Not) => {
+                let register = self.next_mem_raw(ptr);
+                let val = self.read_next_mem(ptr);
+
+                self.write_register(register, !val);
+            }
+            Some(Rmem) => {
+                let register = self.next_mem_raw(ptr);
+                let address = self.read_next_mem(ptr).to_usize();
+                let val = u15::new(self.mem[address] as usize);
+
+                self.write_register(register, val);
+            }
+            Some(Wmem) => {
+                let address = self.read_next_mem(ptr);
+                let val = self.read_next_mem(ptr);
+
+                self.write_mem(address.to_usize(), val);
+            }
+            Some(Call) => {
+                let position = self.read_next_mem(ptr).to_usize();
+                let next_instruction = *ptr + 1;
+
+                self.stack.push(u15::new(next_instruction));
+                return position;
+            }
+            Some(Ret) => {
+                let address = match self.stack.pop() {
+                    Some(addr) => addr,
+                    None => return FIFTEEN_BIT_MAX + 1,
+                };
+                return address.to_usize();
+            }
+            Some(Out) => {
+                let arg = self.read_next_mem(ptr);
+                print!("{}", arg);
+            }
+            Some(In) => {
+                use std::io;
+                use std::io::Read;
+                let register = self.next_mem_raw(ptr);
+
+                let c = io::stdin()
+                    .bytes()
+                    .next()
+                    .expect("No char received from stdin")
+                    .expect("Error reading char from stdin");
+
+                self.write_register(register, u15::new(c as usize));
+
+            }
+            Some(Noop) => {}
+            None => panic!("Operation \"{}\" not valid, at location {:X}", self.mem[*ptr], ptr),
+        }
+
+        *ptr + 1
+    }
+
+    pub fn stack(&self) -> &Vec<u15> {
+        &self.stack
+    }
+
+    pub fn read_register(&self, register: u16) -> u15 {
+        let idx = get_register_idx(register);
+        self.registers[idx]
+    }
+
+    pub fn write_register(&mut self, register: u16, data: u15) {
+        let idx = get_register_idx(register);
+        self.registers[idx] = data;
+    }
+
 
     fn read_mem(&self, ptr: &usize) -> u15 {
         assert!(*ptr <= FIFTEEN_BIT_MAX);
@@ -270,16 +230,6 @@ impl VirtualMachine {
         self.read_mem(&ptr)
     }
 
-    fn read_register(&self, register: u16) -> u15 {
-        let idx = get_register_idx(register);
-        self.registers[idx]
-    }
-
-    fn write_register(&mut self, register: u16, data: u15) {
-        let idx = get_register_idx(register);
-        self.registers[idx] = data;
-    }
-
     fn write_mem(&mut self, address: usize, data: u15) {
         assert!(
             address <= FIFTEEN_BIT_MAX,
@@ -291,11 +241,13 @@ impl VirtualMachine {
 }
 
 fn get_register_idx(address: u16) -> usize {
-    assert!(
-        is_register(address),
-        format!("{} is not a valid register address!", address),
-    );
-    (address as usize) - FIFTEEN_BIT_MAX - 1
+    if is_register(address) {
+        (address as usize) - FIFTEEN_BIT_MAX - 1
+    } else if address < 8 {
+        address as usize
+    } else {
+        panic!("{} is not a valid register address!", address);
+    }
 }
 
 fn is_register(x: u16) -> bool {
