@@ -8,3 +8,6 @@ readme = "README.md"
 publish = false
 
 [dependencies]
+serde = { version = "1", features = ["derive"] }
+serde-big-array = "0.1"
+ron = "0.5"

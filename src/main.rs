@@ -78,5 +78,8 @@ fn print_usage() {
     println!("  synacor-vm execute <input>            Run compiled Synacor bytecode");
     println!("");
     println!("Options:");
-    println!("  --help                                Print this usage information");
+    println!("  --help  Print this usage information");
+    println!("");
+    println!("Execution Commands:");
+    println!("  !help   Prints execution command help menu when input during program execution");
 }

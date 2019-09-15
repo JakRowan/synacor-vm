@@ -1,6 +1,15 @@
+use ron;
+use serde::{Serialize, Deserialize};
 use types::{u15, OpCode, FIFTEEN_BIT_MAX};
 
+big_array! {
+    BigArray;
+    FIFTEEN_BIT_MAX,
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct VirtualMachine {
+    #[serde(with = "BigArray")]
     mem: [u16; FIFTEEN_BIT_MAX],
     registers: [u15; 8],
     stack: Vec<u15>,
@@ -21,7 +30,7 @@ impl VirtualMachine {
         let mut bytecode = bytecode.into_iter();
         let mut mem_length = 0;
 
-        for mut x in self.mem.as_mut().into_iter() {
+        for x in self.mem.as_mut().into_iter() {
             let little_end = match bytecode.next() {
                 Some(data) => data as u16,
                 None => break,
@@ -189,13 +198,79 @@ impl VirtualMachine {
                     .expect("No char received from stdin")
                     .expect("Error reading char from stdin");
 
-                self.write_register(register, u15::new(c as usize));
+                if c == '!' as u8 {
+                    let mut command = String::new();
+                    io::stdin().read_line(&mut command).unwrap();
+
+                    self.run_execution_command(command.as_str().trim());
+                    self.write_register(register, u15::new('\n' as usize));
+                } else {
+                    self.write_register(register, u15::new(c as usize));
+                }
             }
             Some(Noop) => {}
             None => panic!("Operation \"{}\" not valid, at location {:X}", self.mem[*ptr], ptr),
         }
 
         *ptr + 1
+    }
+
+    fn run_execution_command(&mut self, command: &str) {
+        use std::fs::{File};
+        use std::io::{Write};
+
+        match command {
+            "help" => print_execution_help(),
+            "save_state" => {
+                let filepath = prompt("Path to file");
+                let mut file = File::create(filepath.as_str().trim()).unwrap();
+                let data = serialize_vm(&self);
+
+                file.write_all(data.as_bytes()).unwrap();
+
+                println!("");
+                print!("Machine state saved successfully.");
+            },
+            cmd => {
+                println!("{:?} is not a valid execution command", cmd);
+                print_execution_help();
+            },
+        }
+
+        fn prompt(msg: &str) -> String {
+            use std::io::{stdin, stdout};
+
+            let mut input = String::new();
+
+            print!("{}: ", msg);
+            let _ = stdout().flush();
+
+            stdin().read_line(&mut input).unwrap();
+            input
+        }
+
+        fn serialize_vm(vm: &VirtualMachine) -> String {
+            let pretty_config = ron::ser::PrettyConfig{
+                depth_limit: 100,
+                new_line: "\n".to_string(),
+                indentor: "    ".to_string(),
+                separate_tuple_members: false,
+                enumerate_arrays: false,
+            };
+            let mut serializer = ron::ser::Serializer::new(Some(pretty_config), true);
+
+            vm.serialize(&mut serializer).unwrap();
+
+            serializer.into_output_string()
+        }
+
+        fn print_execution_help() {
+            println!("Execution Command Help Menu");
+            println!("");
+            println!("Commands:");
+            println!("  help        Prints this help menu");
+            print!("  save_state  Saves the vm state into a file");
+        }
     }
 
     pub fn decompile(self) {
