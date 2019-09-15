@@ -231,6 +231,19 @@ impl VirtualMachine {
                 println!("");
                 print!("Machine state saved successfully.");
             },
+            "load_state" => {
+                let filepath = prompt("Path to file");
+                let file = File::open(filepath.as_str().trim()).unwrap();
+                let state: VirtualMachine = ron::de::from_reader(file).unwrap();
+
+                self.mem = state.mem;
+                self.registers = state.registers;
+                self.stack = state.stack;
+                self.initial_mem_length = state.initial_mem_length;
+
+                println!("");
+                print!("Machine state loaded successfully.");
+            },
             cmd => {
                 println!("{:?} is not a valid execution command", cmd);
                 print_execution_help();
@@ -269,7 +282,8 @@ impl VirtualMachine {
             println!("");
             println!("Commands:");
             println!("  help        Prints this help menu");
-            print!("  save_state  Saves the vm state into a file");
+            println!("  save_state  Saves the vm state into a file");
+            println!("  load_state  Loads the state file into the vm");
         }
     }
 
