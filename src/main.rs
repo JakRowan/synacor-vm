@@ -16,7 +16,19 @@ fn main() -> io::Result<()> {
         return Ok(());
     }
 
-    if command.as_str() == "execute" {
+    if command.as_str() == "decompile" {
+        let in_path = match env::args().nth(2) {
+            Some(x) => x,
+            None => {
+                print_usage();
+                return Ok(());
+            }
+        };
+        let bytecode = fs::read(in_path)?;
+        let vm = synacor::VirtualMachine::new().load(bytecode);
+
+        vm.decompile();
+    } else if command.as_str() == "execute" {
         let in_path = match env::args().nth(2) {
             Some(x) => x,
             None => {
@@ -42,6 +54,7 @@ fn print_usage() {
     println!("");
     println!("Usage:");
     println!("  synacor-vm help                       Print this usage information");
+    println!("  synacor-vm decompile <input>          Decompile Synacor bytecode into assembly");
     println!("  synacor-vm execute <input>            Run compiled Synacor bytecode");
     println!("");
     println!("Options:");

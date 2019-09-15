@@ -4,6 +4,7 @@ pub struct VirtualMachine {
     mem: [u16; FIFTEEN_BIT_MAX],
     registers: [u15; 8],
     stack: Vec<u15>,
+    initial_mem_length: usize,
 }
 
 impl VirtualMachine {
@@ -12,11 +13,13 @@ impl VirtualMachine {
             mem: [0; FIFTEEN_BIT_MAX],
             registers: [u15::new(0); 8],
             stack: Vec::new(),
+            initial_mem_length: 0,
         }
     }
 
     pub fn load(mut self, bytecode: Vec<u8>) -> VirtualMachine {
         let mut bytecode = bytecode.into_iter();
+        let mut mem_length = 0;
 
         for mut x in self.mem.as_mut().into_iter() {
             let little_end = match bytecode.next() {
@@ -29,8 +32,10 @@ impl VirtualMachine {
             };
 
             *x = little_end + (big_end << 8);
+            mem_length += 1;
         }
 
+        self.initial_mem_length = mem_length;
         self
     }
 
@@ -185,13 +190,159 @@ impl VirtualMachine {
                     .expect("Error reading char from stdin");
 
                 self.write_register(register, u15::new(c as usize));
-
             }
             Some(Noop) => {}
             None => panic!("Operation \"{}\" not valid, at location {:X}", self.mem[*ptr], ptr),
         }
 
         *ptr + 1
+    }
+
+    pub fn decompile(self) {
+        use self::OpCode::*;
+        let mut ptr = 0;
+
+        while ptr <= self.initial_mem_length {
+            print!("0x{:05X}:    ", ptr);
+
+            match OpCode::from_u16(self.mem[ptr]) {
+                Some(Halt) => {
+                    println!("HALT");
+                    println!();
+                }
+                Some(Set) => {
+                    let r = self.next_mem_interpret(&mut ptr);
+                    let v = self.next_mem_interpret(&mut ptr);
+
+                    println!(" SET   {}   {}", r, v);
+                }
+                Some(Push) => {
+                    let v = self.next_mem_interpret(&mut ptr);
+
+                    println!("PUSH   {}", v);
+                }
+                Some(Pop) => {
+                    let r = self.next_mem_interpret(&mut ptr);
+
+                    println!(" POP   {}", r);
+                }
+                Some(Eq) => {
+                    let r = self.next_mem_interpret(&mut ptr);
+                    let a = self.next_mem_interpret(&mut ptr);
+                    let b = self.next_mem_interpret(&mut ptr);
+
+                    println!("  EQ   {}   {}   {}", r, a, b);
+                }
+                Some(Gt) => {
+                    let r = self.next_mem_interpret(&mut ptr);
+                    let a = self.next_mem_interpret(&mut ptr);
+                    let b = self.next_mem_interpret(&mut ptr);
+
+                    println!("  GT   {}   {}   {}", r, a, b);
+                }
+                Some(Jmp) => {
+                    let a = self.next_mem_interpret(&mut ptr);
+
+                    println!(" JMP   {}", a);
+                    println!();
+                }
+                Some(Jt) => {
+                    let a = self.next_mem_interpret(&mut ptr);
+                    let b = self.next_mem_interpret(&mut ptr);
+
+                    println!("  JT   {}   {}", a, b);
+                }
+                Some(Jf) => {
+                    let a = self.next_mem_interpret(&mut ptr);
+                    let b = self.next_mem_interpret(&mut ptr);
+
+                    println!("  JF   {}   {}", a, b);
+                }
+                Some(Add) => {
+                    let r = self.next_mem_interpret(&mut ptr);
+                    let a = self.next_mem_interpret(&mut ptr);
+                    let b = self.next_mem_interpret(&mut ptr);
+
+                    println!(" ADD   {}   {}   {}", r, a, b);
+                }
+                Some(Mult) => {
+                    let r = self.next_mem_interpret(&mut ptr);
+                    let a = self.next_mem_interpret(&mut ptr);
+                    let b = self.next_mem_interpret(&mut ptr);
+
+                    println!("MULT   {}   {}   {}", r, a, b);
+                }
+                Some(Mod) => {
+                    let r = self.next_mem_interpret(&mut ptr);
+                    let a = self.next_mem_interpret(&mut ptr);
+                    let b = self.next_mem_interpret(&mut ptr);
+
+                    println!(" MOD   {}   {}   {}", r, a, b);
+                }
+                Some(And) => {
+                    let r = self.next_mem_interpret(&mut ptr);
+                    let a = self.next_mem_interpret(&mut ptr);
+                    let b = self.next_mem_interpret(&mut ptr);
+
+                    println!(" AND   {}   {}   {}", r, a, b);
+                }
+                Some(Or) => {
+                    let r = self.next_mem_interpret(&mut ptr);
+                    let a = self.next_mem_interpret(&mut ptr);
+                    let b = self.next_mem_interpret(&mut ptr);
+
+                    println!("  OR   {}   {}   {}", r, a, b);
+                }
+                Some(Not) => {
+                    let r = self.next_mem_interpret(&mut ptr);
+                    let a = self.next_mem_interpret(&mut ptr);
+
+                    println!(" NOT   {}   {}", r, a);
+                }
+                Some(Rmem) => {
+                    let r = self.next_mem_interpret(&mut ptr);
+                    let a = self.next_mem_interpret(&mut ptr);
+
+                    println!("RMEM   {}   {}", r, a);
+                }
+                Some(Wmem) => {
+                    let a = self.next_mem_interpret(&mut ptr);
+                    let b = self.next_mem_interpret(&mut ptr);
+
+                    println!("WMEM   {}   {}", a, b);
+                }
+                Some(Call) => {
+                    let a = self.next_mem_interpret(&mut ptr);
+
+                    println!("CALL   {}", a);
+                }
+                Some(Ret) => {
+                    println!(" RET");
+                    println!();
+                }
+                Some(Out) => {
+                    use std::char;
+                    let a = self.next_mem_interpret(&mut ptr);
+
+                    print!(
+                        " OUT   {}   |{}|",
+                        a,
+                        char::from_u32(self.mem[ptr - 2] as u32).unwrap()
+                    );
+                    println!();
+                }
+                Some(In) => {
+                    let r = self.next_mem_interpret(&mut ptr);
+
+                    println!("  IN   {}", r);
+                }
+                Some(Noop) => {
+                    println!("NOOP");
+                }
+                None => println!("  ->   0x{:X}", self.mem[ptr]),
+            }
+            ptr += 1;
+        }
     }
 
     pub fn stack(&self) -> &Vec<u15> {
@@ -223,6 +374,24 @@ impl VirtualMachine {
     fn next_mem_raw(&self, ptr: &mut usize) -> u16 {
         *ptr += 1;
         self.mem[*ptr]
+    }
+
+    fn next_mem_interpret(&self, ptr: &mut usize) -> String {
+        *ptr += 1;
+
+        let val = self.mem[*ptr] as usize;
+
+        let mut val = if val > FIFTEEN_BIT_MAX && val <= FIFTEEN_BIT_MAX + 8 {
+            format!("R{}", val - FIFTEEN_BIT_MAX)
+        } else {
+            format!("0x{:X}", val)
+        };
+
+        for _ in 0..(6 - val.len()) {
+            val.push(' ');
+        }
+
+        val
     }
 
     fn read_next_mem(&self, ptr: &mut usize) -> u15 {
