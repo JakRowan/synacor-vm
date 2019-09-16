@@ -13,6 +13,7 @@ pub struct VirtualMachine {
     mem: [u16; FIFTEEN_BIT_MAX],
     registers: [u15; 8],
     stack: Vec<u15>,
+    ptr: usize,
     initial_mem_length: usize,
 }
 
@@ -22,6 +23,7 @@ impl VirtualMachine {
             mem: [0; FIFTEEN_BIT_MAX],
             registers: [u15::new(0); 8],
             stack: Vec::new(),
+            ptr: 0,
             initial_mem_length: 0,
         }
     }
@@ -53,6 +55,7 @@ impl VirtualMachine {
 
         while ptr <= FIFTEEN_BIT_MAX {
             ptr = self.step_single_instruction(&mut ptr);
+            self.ptr = ptr;
         }
     }
 
@@ -244,6 +247,9 @@ impl VirtualMachine {
                 println!("");
                 print!("Machine state loaded successfully.");
             },
+            "disassemble" => {
+                self.decompile();
+            },
             cmd => {
                 println!("{:?} is not a valid execution command", cmd);
                 print_execution_help();
@@ -281,13 +287,14 @@ impl VirtualMachine {
             println!("Execution Command Help Menu");
             println!("");
             println!("Commands:");
-            println!("  help        Prints this help menu");
-            println!("  save_state  Saves the vm state into a file");
-            println!("  load_state  Loads the state file into the vm");
+            println!("  help         Prints this help menu");
+            println!("  disassemble  Dissasembles the current memory into a file");
+            println!("  save_state   Saves the vm state into a file");
+            println!("  load_state   Loads the state file into the vm");
         }
     }
 
-    pub fn decompile(self) {
+    pub fn decompile(&mut self) {
         use self::OpCode::*;
         let mut ptr = 0;
 

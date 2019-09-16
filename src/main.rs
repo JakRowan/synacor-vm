@@ -44,7 +44,7 @@ fn main() -> io::Result<()> {
             }
         };
         let bytecode = fs::read(in_path)?;
-        let vm = synacor::VirtualMachine::new().load(bytecode);
+        let mut vm = synacor::VirtualMachine::new().load(bytecode);
 
         vm.decompile();
     } else if command.as_str() == "execute" {
