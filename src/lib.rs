@@ -3,6 +3,8 @@ extern crate serde;
 #[macro_use]
 extern crate serde_big_array;
 
+pub mod teleporter;
+
 mod compiler;
 mod types;
 mod vm;

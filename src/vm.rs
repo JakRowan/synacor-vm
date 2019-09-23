@@ -287,10 +287,10 @@ impl VirtualMachine {
             println!("Execution Command Help Menu");
             println!("");
             println!("Commands:");
-            println!("  help         Prints this help menu");
-            println!("  disassemble  Dissasembles the current memory into a file");
-            println!("  save_state   Saves the vm state into a file");
-            println!("  load_state   Loads the state file into the vm");
+            println!("  !help         Prints this help menu");
+            println!("  !disassemble  Dissasembles the current memory into a file");
+            println!("  !save_state   Saves the vm state into a file");
+            println!("  !load_state   Loads the state file into the vm");
         }
     }
 
@@ -505,7 +505,7 @@ impl VirtualMachine {
     }
 }
 
-fn get_register_idx(address: u16) -> usize {
+pub fn get_register_idx(address: u16) -> usize {
     if is_register(address) {
         (address as usize) - FIFTEEN_BIT_MAX - 1
     } else if address < 8 {
@@ -515,7 +515,8 @@ fn get_register_idx(address: u16) -> usize {
     }
 }
 
-fn is_register(x: u16) -> bool {
+pub fn is_register(x: u16) -> bool {
     let max_data_val = FIFTEEN_BIT_MAX as u16;
     x > max_data_val && x <= max_data_val + 8
 }
+

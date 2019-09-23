@@ -92,7 +92,7 @@ impl OpCode {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct u15(usize);
 
 impl u15 {
@@ -105,8 +105,28 @@ impl u15 {
         u15(num)
     }
 
+    pub fn increment(&mut self) {
+        *self = *self + u15::new(1);
+    }
+
+    pub fn decrement(&mut self) {
+        *self = *self + u15::new(FIFTEEN_BIT_MAX);
+    }
+
     pub fn is_zero(&self) -> bool {
         self.0 == 0
+    }
+
+    pub fn is_non_zero(&self) -> bool {
+        self.0 != 0
+    }
+
+    pub fn is_true(&self) -> bool {
+        self.is_non_zero()
+    }
+
+    pub fn is_false(&self) -> bool {
+        self.is_zero()
     }
 
     pub fn to_u16(self) -> u16 {
@@ -182,3 +202,10 @@ impl ops::Rem for u15 {
     }
 }
 
+impl ops::Sub for u15 {
+    type Output = Self;
+
+    fn sub(self, other: u15) -> u15 {
+        self.op_and_modulo(other, |x, y| x - y)
+    }
+}
