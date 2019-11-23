@@ -24,7 +24,6 @@ fn main() -> io::Result<()> {
                 return Ok(());
             }
         };
-        let assembly = fs::read_to_string(in_path)?;
         let out_path = match env::args().nth(3) {
             Some(x) => x,
             None => {
@@ -32,6 +31,7 @@ fn main() -> io::Result<()> {
                 return Ok(());
             }
         };
+        let assembly = fs::read_to_string(in_path)?;
         let compiler = synacor::Compiler::new().load(assembly);
 
         compiler.compile(out_path)?;
@@ -43,10 +43,17 @@ fn main() -> io::Result<()> {
                 return Ok(());
             }
         };
+        let out_path = match env::args().nth(3) {
+            Some(x) => x,
+            None => {
+                print_usage();
+                return Ok(());
+            }
+        };
         let bytecode = fs::read(in_path)?;
         let mut vm = synacor::VirtualMachine::new().load(bytecode);
 
-        vm.decompile();
+        vm.decompile(out_path);
     } else if command.as_str() == "execute" {
         let in_path = match env::args().nth(2) {
             Some(x) => x,
@@ -79,11 +86,11 @@ fn print_usage() {
     println!("Virtual Machine and Reverse Engineering Tools");
     println!("");
     println!("Usage:");
-    println!("  synacor-vm help                      Print this usage information");
-    println!("  synacor-vm compile <input> <output>  Compile Synacor assembly into bytecode");
-    println!("  synacor-vm decompile <input>         Decompile Synacor bytecode into assembly");
-    println!("  synacor-vm execute <input>           Run compiled Synacor bytecode");
-    println!("  synacor-vm solve-calibration         Solve telepoter calibration for R8 value");
+    println!("  synacor-vm help                        Print this usage information");
+    println!("  synacor-vm compile <input> <output>    Compile Synacor assembly into bytecode");
+    println!("  synacor-vm decompile <input> <output>  Decompile Synacor bytecode into assembly");
+    println!("  synacor-vm execute <input>             Run compiled Synacor bytecode");
+    println!("  synacor-vm solve-calibration           Solve telepoter calibration for R8 value");
     println!("");
     println!("Options:");
     println!("  --help  Print this usage information");

@@ -1,5 +1,5 @@
+use std::time::Instant;
 use types::{u15, FIFTEEN_BIT_MAX};
-use std::time::{Instant};
 
 struct Memory {
     r1: u15,
@@ -40,7 +40,7 @@ impl Memory {
 // }
 
 pub fn solve_calibration_for_r8() -> Option<u16> {
-    for mut r8 in 0..(FIFTEEN_BIT_MAX + 1) as u16 {
+    for r8 in 0..(FIFTEEN_BIT_MAX + 1) as u16 {
         println!("Attempting with R8 = {}", r8);
         let mut mem = Memory::new(r8 as usize);
 
@@ -103,4 +103,3 @@ fn calibrate(mem: &mut Memory) -> u16 {
 
 //     mem.r1 = mem.r2 + u15::new(1);
 // }
-

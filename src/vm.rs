@@ -1,5 +1,6 @@
 use ron;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use std::{fs::File, io::Write, path::Path};
 use types::{u15, OpCode, FIFTEEN_BIT_MAX};
 
 big_array! {
@@ -212,16 +213,16 @@ impl VirtualMachine {
                 }
             }
             Some(Noop) => {}
-            None => panic!("Operation \"{}\" not valid, at location {:X}", self.mem[*ptr], ptr),
+            None => panic!(
+                "Operation \"{}\" not valid, at location {:X}",
+                self.mem[*ptr], ptr
+            ),
         }
 
         *ptr + 1
     }
 
     fn run_execution_command(&mut self, command: &str) {
-        use std::fs::{File};
-        use std::io::{Write};
-
         match command {
             "help" => print_execution_help(),
             "save_state" => {
@@ -233,7 +234,7 @@ impl VirtualMachine {
 
                 println!("");
                 print!("Machine state saved successfully.");
-            },
+            }
             "load_state" => {
                 let filepath = prompt("Path to file");
                 let file = File::open(filepath.as_str().trim()).unwrap();
@@ -246,14 +247,16 @@ impl VirtualMachine {
 
                 println!("");
                 print!("Machine state loaded successfully.");
-            },
+            }
             "disassemble" => {
-                self.decompile();
-            },
+                let filepath = prompt("Path to file");
+
+                self.decompile(filepath.trim());
+            }
             cmd => {
                 println!("{:?} is not a valid execution command", cmd);
                 print_execution_help();
-            },
+            }
         }
 
         fn prompt(msg: &str) -> String {
@@ -269,7 +272,7 @@ impl VirtualMachine {
         }
 
         fn serialize_vm(vm: &VirtualMachine) -> String {
-            let pretty_config = ron::ser::PrettyConfig{
+            let pretty_config = ron::ser::PrettyConfig {
                 depth_limit: 100,
                 new_line: "\n".to_string(),
                 indentor: "    ".to_string(),
@@ -294,148 +297,154 @@ impl VirtualMachine {
         }
     }
 
-    pub fn decompile(&mut self) {
+    pub fn decompile<P: AsRef<Path>>(&mut self, filepath: P) {
         use self::OpCode::*;
+
         let mut ptr = 0;
+        let mut file = File::create(filepath).unwrap();
 
         while ptr <= self.initial_mem_length {
-            print!("0x{:05X}:    ", ptr);
+            write!(&mut file, "0x{:05X}:    ", ptr).unwrap();
 
             match OpCode::from_u16(self.mem[ptr]) {
                 Some(Halt) => {
-                    println!("HALT");
-                    println!();
+                    writeln!(&mut file, "HALT").unwrap();
+                    writeln!(&mut file).unwrap();
                 }
                 Some(Set) => {
                     let r = self.next_mem_interpret(&mut ptr);
                     let v = self.next_mem_interpret(&mut ptr);
 
-                    println!(" SET   {}   {}", r, v);
+                    writeln!(&mut file, " SET   {}   {}", r, v).unwrap();
                 }
                 Some(Push) => {
                     let v = self.next_mem_interpret(&mut ptr);
 
-                    println!("PUSH   {}", v);
+                    writeln!(&mut file, "PUSH   {}", v).unwrap();
                 }
                 Some(Pop) => {
                     let r = self.next_mem_interpret(&mut ptr);
 
-                    println!(" POP   {}", r);
+                    writeln!(&mut file, " POP   {}", r).unwrap();
                 }
                 Some(Eq) => {
                     let r = self.next_mem_interpret(&mut ptr);
                     let a = self.next_mem_interpret(&mut ptr);
                     let b = self.next_mem_interpret(&mut ptr);
 
-                    println!("  EQ   {}   {}   {}", r, a, b);
+                    writeln!(&mut file, "  EQ   {}   {}   {}", r, a, b).unwrap();
                 }
                 Some(Gt) => {
                     let r = self.next_mem_interpret(&mut ptr);
                     let a = self.next_mem_interpret(&mut ptr);
                     let b = self.next_mem_interpret(&mut ptr);
 
-                    println!("  GT   {}   {}   {}", r, a, b);
+                    writeln!(&mut file, "  GT   {}   {}   {}", r, a, b).unwrap();
                 }
                 Some(Jmp) => {
                     let a = self.next_mem_interpret(&mut ptr);
 
-                    println!(" JMP   {}", a);
-                    println!();
+                    writeln!(&mut file, " JMP   {}", a).unwrap();
+                    writeln!(&mut file).unwrap();
                 }
                 Some(Jt) => {
                     let a = self.next_mem_interpret(&mut ptr);
                     let b = self.next_mem_interpret(&mut ptr);
 
-                    println!("  JT   {}   {}", a, b);
+                    writeln!(&mut file, "  JT   {}   {}", a, b).unwrap();
                 }
                 Some(Jf) => {
                     let a = self.next_mem_interpret(&mut ptr);
                     let b = self.next_mem_interpret(&mut ptr);
 
-                    println!("  JF   {}   {}", a, b);
+                    writeln!(&mut file, "  JF   {}   {}", a, b).unwrap();
                 }
                 Some(Add) => {
                     let r = self.next_mem_interpret(&mut ptr);
                     let a = self.next_mem_interpret(&mut ptr);
                     let b = self.next_mem_interpret(&mut ptr);
 
-                    println!(" ADD   {}   {}   {}", r, a, b);
+                    writeln!(&mut file, " ADD   {}   {}   {}", r, a, b).unwrap();
                 }
                 Some(Mult) => {
                     let r = self.next_mem_interpret(&mut ptr);
                     let a = self.next_mem_interpret(&mut ptr);
                     let b = self.next_mem_interpret(&mut ptr);
 
-                    println!("MULT   {}   {}   {}", r, a, b);
+                    writeln!(&mut file, "MULT   {}   {}   {}", r, a, b).unwrap();
                 }
                 Some(Mod) => {
                     let r = self.next_mem_interpret(&mut ptr);
                     let a = self.next_mem_interpret(&mut ptr);
                     let b = self.next_mem_interpret(&mut ptr);
 
-                    println!(" MOD   {}   {}   {}", r, a, b);
+                    writeln!(&mut file, " MOD   {}   {}   {}", r, a, b).unwrap();
                 }
                 Some(And) => {
                     let r = self.next_mem_interpret(&mut ptr);
                     let a = self.next_mem_interpret(&mut ptr);
                     let b = self.next_mem_interpret(&mut ptr);
 
-                    println!(" AND   {}   {}   {}", r, a, b);
+                    writeln!(&mut file, " AND   {}   {}   {}", r, a, b).unwrap();
                 }
                 Some(Or) => {
                     let r = self.next_mem_interpret(&mut ptr);
                     let a = self.next_mem_interpret(&mut ptr);
                     let b = self.next_mem_interpret(&mut ptr);
 
-                    println!("  OR   {}   {}   {}", r, a, b);
+                    writeln!(&mut file, "  OR   {}   {}   {}", r, a, b).unwrap();
                 }
                 Some(Not) => {
                     let r = self.next_mem_interpret(&mut ptr);
                     let a = self.next_mem_interpret(&mut ptr);
 
-                    println!(" NOT   {}   {}", r, a);
+                    writeln!(&mut file, " NOT   {}   {}", r, a).unwrap();
                 }
                 Some(Rmem) => {
                     let r = self.next_mem_interpret(&mut ptr);
                     let a = self.next_mem_interpret(&mut ptr);
 
-                    println!("RMEM   {}   {}", r, a);
+                    writeln!(&mut file, "RMEM   {}   {}", r, a).unwrap();
                 }
                 Some(Wmem) => {
                     let a = self.next_mem_interpret(&mut ptr);
                     let b = self.next_mem_interpret(&mut ptr);
 
-                    println!("WMEM   {}   {}", a, b);
+                    writeln!(&mut file, "WMEM   {}   {}", a, b).unwrap();
                 }
                 Some(Call) => {
                     let a = self.next_mem_interpret(&mut ptr);
 
-                    println!("CALL   {}", a);
+                    writeln!(&mut file, "CALL   {}", a).unwrap();
                 }
                 Some(Ret) => {
-                    println!(" RET");
-                    println!();
+                    writeln!(&mut file, " RET").unwrap();
+                    writeln!(&mut file).unwrap();
                 }
                 Some(Out) => {
                     use std::char;
                     let a = self.next_mem_interpret(&mut ptr);
 
-                    print!(
+                    write!(
+                        &mut file,
                         " OUT   {}   |{}|",
                         a,
                         char::from_u32(self.mem[ptr - 2] as u32).unwrap()
-                    );
-                    println!();
+                    )
+                    .unwrap();
+                    writeln!(&mut file).unwrap();
                 }
                 Some(In) => {
                     let r = self.next_mem_interpret(&mut ptr);
 
-                    println!("  IN   {}", r);
+                    writeln!(&mut file, "  IN   {}", r).unwrap();
                 }
                 Some(Noop) => {
-                    println!("NOOP");
+                    writeln!(&mut file, "NOOP").unwrap();
                 }
-                None => println!("  ->   0x{:X}", self.mem[ptr]),
+                None => {
+                    writeln!(&mut file, "  ->   0x{:X}", self.mem[ptr]).unwrap();
+                }
             }
             ptr += 1;
         }
@@ -454,7 +463,6 @@ impl VirtualMachine {
         let idx = get_register_idx(register);
         self.registers[idx] = data;
     }
-
 
     fn read_mem(&self, ptr: &usize) -> u15 {
         assert!(*ptr <= FIFTEEN_BIT_MAX);
@@ -519,4 +527,3 @@ pub fn is_register(x: u16) -> bool {
     let max_data_val = FIFTEEN_BIT_MAX as u16;
     x > max_data_val && x <= max_data_val + 8
 }
-
