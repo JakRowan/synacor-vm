@@ -1,5 +1,5 @@
-use serde::{Serialize, Deserialize};
-use std::{char, fmt, ops};
+use serde::{Deserialize, Serialize};
+use std::{char, fmt, hash::Hash, ops};
 
 const FIFTEEN_BIT_MODULUS: usize = 32768;
 pub const FIFTEEN_BIT_MAX: usize = (FIFTEEN_BIT_MODULUS as usize) - 1;
@@ -92,7 +92,7 @@ impl OpCode {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct u15(usize);
 
 impl u15 {

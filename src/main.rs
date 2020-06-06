@@ -1,4 +1,5 @@
-extern crate synacor_vm as synacor;
+extern crate synacor_vm;
+use synacor_vm::{teleporter, Compiler, VirtualMachine};
 
 use std::{env, fs, io};
 
@@ -32,7 +33,7 @@ fn main() -> io::Result<()> {
             }
         };
         let assembly = fs::read_to_string(in_path)?;
-        let compiler = synacor::Compiler::new().load(assembly);
+        let compiler = Compiler::new().load(assembly);
 
         compiler.compile(out_path)?;
     } else if command.as_str() == "decompile" {
@@ -51,7 +52,7 @@ fn main() -> io::Result<()> {
             }
         };
         let bytecode = fs::read(in_path)?;
-        let mut vm = synacor::VirtualMachine::new().load(bytecode);
+        let mut vm = VirtualMachine::new().load(bytecode);
 
         vm.decompile(out_path);
     } else if command.as_str() == "execute" {
@@ -63,15 +64,23 @@ fn main() -> io::Result<()> {
             }
         };
         let bytecode = fs::read(in_path)?;
-        let vm = synacor::VirtualMachine::new().load(bytecode);
+        let vm = VirtualMachine::new().load(bytecode);
 
         vm.execute();
     } else if command.as_str() == "solve-calibration" {
-        println!("Solving calibration for R8...");
-
-        match synacor::teleporter::solve_calibration_for_r8() {
-            Some(v) => println!("Set R8 to {} for proper teleportation!", v),
-            None => println!("No valid R8 found! Something is wrong here..."),
+        if let Some(r7) = env::args().nth(2) {
+            println!("Solving calibration for R8 = {} ...", r7);
+            let mut mem = teleporter::Memory::new(r7.parse().unwrap());
+            match teleporter::calibrate(&mut mem) {
+                6 => println!("Set R8 to {} for proper teleportation!", r7),
+                x => println!("result: {}, is not valid.", x),
+            }
+        } else {
+            println!("Solving calibration for R8...");
+            match teleporter::solve_calibration_for_r7() {
+                Some(v) => println!("Set R8 to {} for proper teleportation!", v),
+                None => println!("No valid R8 found! Something is wrong here..."),
+            }
         }
     } else {
         print_usage();
@@ -90,7 +99,7 @@ fn print_usage() {
     println!("  synacor-vm compile <input> <output>    Compile Synacor assembly into bytecode");
     println!("  synacor-vm decompile <input> <output>  Decompile Synacor bytecode into assembly");
     println!("  synacor-vm execute <input>             Run compiled Synacor bytecode");
-    println!("  synacor-vm solve-calibration           Solve telepoter calibration for R8 value");
+    println!("  synacor-vm solve-calibration [u15]     Solve telepoter calibration for R8 value");
     println!("");
     println!("Options:");
     println!("  --help  Print this usage information");

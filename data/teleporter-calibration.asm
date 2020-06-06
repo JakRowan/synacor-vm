@@ -17,3 +17,5 @@
 0x00023:     ADD   R1       R1       0x7FFF
 0x00027:    CALL   0x1
 0x00029:     RET
+
+0x0002A:     HALT

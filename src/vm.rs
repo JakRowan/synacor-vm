@@ -51,13 +51,19 @@ impl VirtualMachine {
         self
     }
 
-    pub fn execute(mut self) {
+    pub fn execute(mut self) -> VirtualMachine {
         let mut ptr = 0;
 
         while ptr <= FIFTEEN_BIT_MAX {
             ptr = self.step_single_instruction(&mut ptr);
             self.ptr = ptr;
         }
+
+        self
+    }
+
+    pub fn set_ptr(&mut self, ptr: usize) {
+        self.ptr = ptr;
     }
 
     pub fn step_single_instruction(&mut self, ptr: &mut usize) -> usize {

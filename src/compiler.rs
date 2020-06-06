@@ -14,8 +14,7 @@ impl Compiler {
 
     pub fn load(mut self, assembly: String) -> Compiler {
         for instruction in assembly.split_whitespace() {
-            if instruction.ends_with(":") || instruction.starts_with("|") || instruction == "->"
-            {
+            if instruction.ends_with(":") || instruction.starts_with("|") || instruction == "->" {
                 continue;
             }
             self.instructions.push(instruction.to_string());
