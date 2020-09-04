@@ -3,15 +3,17 @@ use serde::{Deserialize, Serialize};
 use std::{fs::File, io::Write, path::Path};
 use types::{u15, OpCode, FIFTEEN_BIT_MAX};
 
+const BIG_ARRAY_MAX: usize = FIFTEEN_BIT_MAX as usize;
+
 big_array! {
     BigArray;
-    FIFTEEN_BIT_MAX,
+    BIG_ARRAY_MAX,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct VirtualMachine {
     #[serde(with = "BigArray")]
-    mem: [u16; FIFTEEN_BIT_MAX],
+    mem: [u16; FIFTEEN_BIT_MAX as usize],
     registers: [u15; 8],
     stack: Vec<u15>,
     ptr: usize,
@@ -21,7 +23,7 @@ pub struct VirtualMachine {
 impl VirtualMachine {
     pub fn new() -> VirtualMachine {
         VirtualMachine {
-            mem: [0; FIFTEEN_BIT_MAX],
+            mem: [0; FIFTEEN_BIT_MAX as usize],
             registers: [u15::new(0); 8],
             stack: Vec::new(),
             ptr: 0,
@@ -54,7 +56,7 @@ impl VirtualMachine {
     pub fn execute(mut self) -> VirtualMachine {
         let mut ptr = 0;
 
-        while ptr <= FIFTEEN_BIT_MAX {
+        while ptr <= FIFTEEN_BIT_MAX as usize {
             ptr = self.step_single_instruction(&mut ptr);
             self.ptr = ptr;
         }
@@ -70,7 +72,7 @@ impl VirtualMachine {
         use types::OpCode::*;
 
         match OpCode::from_u16(self.mem[*ptr]) {
-            Some(Halt) => return FIFTEEN_BIT_MAX + 1,
+            Some(Halt) => return (FIFTEEN_BIT_MAX + 1) as usize,
             Some(Set) => {
                 let register = self.next_mem_raw(ptr);
                 let val = self.read_next_mem(ptr);
@@ -169,7 +171,7 @@ impl VirtualMachine {
             Some(Rmem) => {
                 let register = self.next_mem_raw(ptr);
                 let address = self.read_next_mem(ptr).to_usize();
-                let val = u15::new(self.mem[address] as usize);
+                let val = u15::new(self.mem[address]);
 
                 self.write_register(register, val);
             }
@@ -183,13 +185,13 @@ impl VirtualMachine {
                 let position = self.read_next_mem(ptr).to_usize();
                 let next_instruction = *ptr + 1;
 
-                self.stack.push(u15::new(next_instruction));
+                self.stack.push(u15::new(next_instruction as u16));
                 return position;
             }
             Some(Ret) => {
                 let address = match self.stack.pop() {
                     Some(addr) => addr,
-                    None => return FIFTEEN_BIT_MAX + 1,
+                    None => return (FIFTEEN_BIT_MAX + 1) as usize,
                 };
                 return address.to_usize();
             }
@@ -213,9 +215,9 @@ impl VirtualMachine {
                     io::stdin().read_line(&mut command).unwrap();
 
                     self.run_execution_command(command.as_str().trim());
-                    self.write_register(register, u15::new('\n' as usize));
+                    self.write_register(register, u15::new('\n' as u16));
                 } else {
-                    self.write_register(register, u15::new(c as usize));
+                    self.write_register(register, u15::new(c as u16));
                 }
             }
             Some(Noop) => {}
@@ -471,13 +473,13 @@ impl VirtualMachine {
     }
 
     fn read_mem(&self, ptr: &usize) -> u15 {
-        assert!(*ptr <= FIFTEEN_BIT_MAX);
+        assert!(*ptr <= FIFTEEN_BIT_MAX as usize);
         let raw = self.mem[*ptr];
 
         if is_register(raw) {
             self.read_register(raw)
         } else {
-            u15::new(raw as usize)
+            u15::new(raw)
         }
     }
 
@@ -489,7 +491,7 @@ impl VirtualMachine {
     fn next_mem_interpret(&self, ptr: &mut usize) -> String {
         *ptr += 1;
 
-        let val = self.mem[*ptr] as usize;
+        let val = self.mem[*ptr];
 
         let mut val = if val > FIFTEEN_BIT_MAX && val <= FIFTEEN_BIT_MAX + 8 {
             format!("R{}", val - FIFTEEN_BIT_MAX)
@@ -511,7 +513,7 @@ impl VirtualMachine {
 
     fn write_mem(&mut self, address: usize, data: u15) {
         assert!(
-            address <= FIFTEEN_BIT_MAX,
+            address <= FIFTEEN_BIT_MAX as usize,
             format!("Invalid memory address for write: {}", address),
         );
 
@@ -521,7 +523,7 @@ impl VirtualMachine {
 
 pub fn get_register_idx(address: u16) -> usize {
     if is_register(address) {
-        (address as usize) - FIFTEEN_BIT_MAX - 1
+        (address - FIFTEEN_BIT_MAX - 1) as usize
     } else if address < 8 {
         address as usize
     } else {

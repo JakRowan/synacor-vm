@@ -17,7 +17,7 @@ pub struct Memory {
 }
 
 impl Memory {
-    pub fn new(r7: usize) -> Memory {
+    pub fn new(r7: u16) -> Memory {
         let mut stack = vec![];
         stack.reserve(20_000);
         Memory {
@@ -46,9 +46,9 @@ impl Display for Memory {
 }
 
 pub fn solve_calibration_for_r7() -> Option<u16> {
-    for r7 in 0..(FIFTEEN_BIT_MAX + 1) as u16 {
+    for r7 in 0..FIFTEEN_BIT_MAX + 1 {
         println!("Attempting with R8 = {}", r7);
-        let mut mem = Memory::new(r7 as usize);
+        let mut mem = Memory::new(r7);
 
         let now = Instant::now();
         let result = calibrate(&mut mem);
@@ -188,7 +188,7 @@ fn calibrate_raw_asm(mem: &mut Memory) -> u16 {
     let mut vm = vm.load(bytecode);
     let mut ptr = 0;
 
-    while ptr <= FIFTEEN_BIT_MAX {
+    while ptr <= FIFTEEN_BIT_MAX as usize {
         ptr = vm.step_single_instruction(&mut ptr);
         vm.set_ptr(ptr);
     }

@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::{char, fmt, hash::Hash, ops};
 
-const FIFTEEN_BIT_MODULUS: usize = 32768;
-pub const FIFTEEN_BIT_MAX: usize = (FIFTEEN_BIT_MODULUS as usize) - 1;
+const FIFTEEN_BIT_MODULUS: u16 = 32768;
+pub const FIFTEEN_BIT_MAX: u16 = FIFTEEN_BIT_MODULUS - 1;
 
 pub enum OpCode {
     Halt = 0,
@@ -93,12 +93,12 @@ impl OpCode {
 
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-pub struct u15(usize);
+pub struct u15(u16);
 
 impl u15 {
-    pub fn new(num: usize) -> u15 {
+    pub fn new(num: u16) -> u15 {
         assert!(
-            num <= FIFTEEN_BIT_MAX as usize,
+            num <= FIFTEEN_BIT_MAX,
             format!("{} is not a valid u15", num),
         );
 
@@ -130,16 +130,16 @@ impl u15 {
     }
 
     pub fn to_u16(self) -> u16 {
-        self.0 as u16
+        self.0
     }
 
     pub fn to_usize(self) -> usize {
-        self.0
+        self.0 as usize
     }
 
     fn op_and_modulo<F>(self, other: u15, f: F) -> u15
     where
-        F: Fn(usize, usize) -> usize,
+        F: Fn(u16, u16) -> u16,
     {
         let result = f(self.0, other.0) % FIFTEEN_BIT_MODULUS;
         u15(result)
