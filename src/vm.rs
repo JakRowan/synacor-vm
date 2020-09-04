@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::{fs::File, io::Write, path::Path};
 use types::{u15, OpCode, FIFTEEN_BIT_MAX};
 
-const BIG_ARRAY_MAX: usize = FIFTEEN_BIT_MAX as usize;
+const BIG_ARRAY_MAX: usize = FIFTEEN_BIT_MAX as usize + 1;
 
 big_array! {
     BigArray;
@@ -13,7 +13,7 @@ big_array! {
 #[derive(Serialize, Deserialize)]
 pub struct VirtualMachine {
     #[serde(with = "BigArray")]
-    mem: [u16; FIFTEEN_BIT_MAX as usize],
+    mem: [u16; BIG_ARRAY_MAX],
     registers: [u15; 8],
     stack: Vec<u15>,
     ptr: usize,
@@ -23,7 +23,7 @@ pub struct VirtualMachine {
 impl VirtualMachine {
     pub fn new() -> VirtualMachine {
         VirtualMachine {
-            mem: [0; FIFTEEN_BIT_MAX as usize],
+            mem: [0; BIG_ARRAY_MAX],
             registers: [u15::new(0); 8],
             stack: Vec::new(),
             ptr: 0,

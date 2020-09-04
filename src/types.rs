@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::{char, fmt, hash::Hash, ops};
 
-const FIFTEEN_BIT_MODULUS: u16 = 32768;
+pub const FIFTEEN_BIT_MODULUS: u16 = 32768;
 pub const FIFTEEN_BIT_MAX: u16 = FIFTEEN_BIT_MODULUS - 1;
 
 pub enum OpCode {

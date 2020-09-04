@@ -1,47 +1,26 @@
-use std::{
-    fmt::{self, Display},
-    fs,
-    hash::Hash,
-    time::Instant,
-};
-use types::{u15, FIFTEEN_BIT_MAX};
+use std::{fs, hash::Hash, time::Instant};
+use types::{u15, FIFTEEN_BIT_MAX, FIFTEEN_BIT_MODULUS};
 use vm::VirtualMachine;
 
 #[derive(Clone, Hash, PartialEq, Eq)]
 pub struct Memory {
-    r0: u15,
-    r1: u15,
     r7: u15,
-    stack: Vec<u15>,
-    level: usize,
+    stack: Vec<(usize, u15)>,
 }
 
 impl Memory {
     pub fn new(r7: u16) -> Memory {
-        let mut stack = vec![];
-        stack.reserve(20_000);
+        let stack = vec![
+            (1, u15::new(4)),
+            (r7 as usize, u15::new(3)),
+            (r7 as usize, u15::new(2)),
+            (r7 as usize, u15::new(1)),
+        ];
+
         Memory {
-            r0: u15::new(4),
-            r1: u15::new(1),
             r7: u15::new(r7),
             stack,
-            level: 0,
         }
-    }
-}
-
-impl Display for Memory {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{}R0: {}, R1: {}, R7: {}\n{}stack: {:?}",
-            (0..self.level * 4).map(|_| ' ').collect::<String>(),
-            self.r0.to_u16(),
-            self.r1.to_u16(),
-            self.r7.to_u16(),
-            (0..self.level * 4).map(|_| ' ').collect::<String>(),
-            self.stack.iter().map(|x| x.to_u16()).collect::<Vec<_>>(),
-        )
     }
 }
 
@@ -66,122 +45,101 @@ pub fn solve_calibration_for_r7() -> Option<u16> {
 }
 
 pub fn calibrate(mem: &mut Memory) -> u16 {
-    calibrate_optim_v4(mem)
+    calibrate_reimplementation(mem)
 }
 
-#[allow(unused)]
-fn calibrate_optim_v1(mem: &mut Memory, print: bool) -> u16 {
-    if print {
-        println!("{}", mem);
+/// # Psuedocode
+///
+/// if r7 is 0,
+///     the answer is 2
+///
+/// stack starts with [(r7, 4), (r7, 3), (r7, 2), (r7, 1)]
+///
+/// loop
+///     let (n, y) be stack.pop()
+///
+///     if y is not 1,
+///         stack.push (n, y)
+///         stack.push (r7, y - 1)
+///         continue
+///
+///     if length of stack is 0,
+///         return n + r7 + 1
+///
+///     let (m, x) be stack.pop()
+///
+///     if x is 2,
+///         stack.push (n + (m * (r7 + 1)), x - 1)
+///         continue
+///
+///     stack.push (m - 1, x)
+///     stack.push (n + r7 + 1, x - 1)
+///
+fn calibrate_reimplementation(mem: &mut Memory) -> u16 {
+    if mem.r7.is_zero() {
+        return 2;
     }
-    while mem.r0.is_non_zero() {
-        if mem.r1.is_non_zero() {
-            mem.stack.push(mem.r0);
-            mem.r1.decrement();
-
-            calibrate_optim_v1(mem, false);
-
-            mem.r1 = mem.r0;
-            mem.r0 = mem.stack.pop().unwrap();
-            mem.r0.decrement();
-
-            calibrate_optim_v1(mem, false);
-            continue;
-        }
-
-        mem.r0.decrement();
-        mem.r1 = mem.r7;
-
-        if print {
-            println!("{}", mem);
-        }
-    }
-
-    mem.r0 = mem.r1 + u15::new(1);
-    mem.r0.to_u16()
-}
-
-#[allow(unused)]
-fn calibrate_optim_v2(mem: &mut Memory) -> u16 {
     loop {
-        if mem.r0.is_non_zero() {
-            if mem.r1.is_non_zero() {
-                mem.stack.push(mem.r0);
-                mem.r1.decrement();
+        let (n, y) = mem.stack.pop().unwrap();
 
-                calibrate_optim_v2(mem);
-
-                mem.r1 = mem.r0;
-                mem.r0 = mem.stack.pop().unwrap();
-                mem.r0.decrement();
-
-                continue;
-            }
-
-            mem.r0.decrement();
-            mem.r1 = mem.r7;
+        if y != u15::new(1) {
+            mem.stack.push((n, y));
+            mem.stack.push((mem.r7.to_usize(), y - u15::new(1)));
             continue;
         }
 
-        mem.r0 = mem.r1 + u15::new(1);
-        break mem.r0.to_u16();
+        if mem.stack.len() == 0 {
+            return (n + mem.r7.to_usize() + 1) as u16 % FIFTEEN_BIT_MODULUS;
+        }
+
+        let (m, x) = mem.stack.pop().unwrap();
+
+        if x == u15::new(2) {
+            mem.stack.push((
+                (n + (m * (mem.r7.to_usize() + 1))) % FIFTEEN_BIT_MODULUS as usize,
+                x - u15::new(1),
+            ));
+            continue;
+        }
+
+        if m - 1 > 0 {
+            mem.stack.push((m - 1, x));
+        }
+        mem.stack.push((
+            (n + mem.r7.to_usize() + 1) % FIFTEEN_BIT_MODULUS as usize,
+            x - u15::new(1),
+        ));
     }
 }
 
 #[allow(unused)]
-fn calibrate_optim_v3(mem: &mut Memory) -> u16 {
-    loop {
-        if mem.r0.is_zero() {
-            mem.r0 = mem.r1 + u15::new(1);
-            break mem.r0.to_u16();
-        }
-
-        if mem.r1.is_zero() {
-            mem.r0.decrement();
-            mem.r1 = mem.r7;
-            continue;
-        }
-
-        mem.stack.push(mem.r0);
-        mem.r1.decrement();
-
-        calibrate_optim_v3(mem);
-
-        mem.r1 = mem.r0;
-        mem.r0 = mem.stack.pop().unwrap();
-        mem.r0.decrement();
-    }
-}
-
-fn calibrate_optim_v4(mem: &mut Memory) -> u16 {
-    loop {
-        if mem.r0.is_zero() {
-            mem.r0 = mem.r1 + u15::new(1);
-            break mem.r0.to_u16();
-        }
-
-        if mem.r1.is_zero() {
-            mem.r0.decrement();
-            mem.r1 = mem.r7;
-            continue;
-        }
-
-        mem.stack.push(mem.r0);
-        mem.r1.decrement();
-
-        calibrate_optim_v4(mem);
-
-        mem.r1 = mem.r0;
-        mem.r0 = mem.stack.pop().unwrap();
-        mem.r0.decrement();
-    }
-}
-
-#[allow(unused)]
+/// # Raw ASM
+///
+/// ```
+/// 0x178B:   JT    R0      0x1793
+/// 0x178E:  ADD    R0      R1      0x1
+/// 0x1792:  RET
+///
+/// 0x1793:   JT    R1      0x17A0
+/// 0x1796:  ADD    R0      R0      0x7FFF
+/// 0x179A:  SET    R1      R7
+/// 0x179D: CALL    0x178b
+/// 0x179F:  RET
+///
+/// 0x17A0: PUSH    R0
+/// 0x17A2:  ADD    R1      R1      0x7FFF
+/// 0x17A6: CALL    0x178B
+///
+/// 0x17A8:  SET    R1      R0
+/// 0x17AB:  POP    R0
+/// 0x17AD:  ADD    R0      R0      0x7FFF
+/// 0x17B1: CALL    0x178B
+/// 0x17B3:  RET
+/// ```
 fn calibrate_raw_asm(mem: &mut Memory) -> u16 {
     let mut vm = VirtualMachine::new();
-    vm.write_register(0, mem.r0);
-    vm.write_register(1, mem.r1);
+    vm.write_register(0, u15::new(4));
+    vm.write_register(1, u15::new(1));
     vm.write_register(7, mem.r7);
 
     let bytecode = fs::read("data/teleporter-calibration.bin").unwrap();
