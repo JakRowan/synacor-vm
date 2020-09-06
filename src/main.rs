@@ -23,13 +23,13 @@ fn main() -> io::Result<()> {
 
             match VirtualMachine::new()
                 .load_bytecode(&bytecode)
-                .map(|vm| vm.exec())
+                .map(|vm| vm.run())
             {
-                Ok(_) => {}
-                Err(e) => {
-                    print_err_usage(e);
+                Ok(Err(e)) | Err(e) => {
+                    println!("Error: {}", e);
                     return Ok(());
                 }
+                _ => {}
             }
         }
 

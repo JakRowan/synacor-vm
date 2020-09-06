@@ -10,6 +10,8 @@ pub enum Error {
     BadBytecodeFormat,
     BadBytecodeLength(usize),
     InvalidOperation(u16),
+    InvalidRegister(u16),
+    MemOutOfBoundsAccess,
 }
 
 impl Display for Error {
@@ -21,7 +23,11 @@ impl Display for Error {
                 "Bytecode of length {} exceeds memory address space of {}",
                 x, MEM_ADDR_SPACE
             ),
-            Error::InvalidOperation(x) => write!(f, "Invalid opcode {:04x}", x),
+            Error::InvalidOperation(x) => write!(f, "Invalid operation {:#06x}", x),
+            Error::InvalidRegister(x) => write!(f, "Invalid register {:#06x}", x),
+            Error::MemOutOfBoundsAccess => {
+                write!(f, "Attempted to access out of bounds memory address")
+            }
         }
     }
 }

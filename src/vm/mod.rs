@@ -1,26 +1,26 @@
 mod err;
+mod mem;
 mod op;
+mod reg;
 
-use self::err::Error;
+use self::{err::Error, mem::Memory, reg::Registers};
 
 const MEM_ADDR_SPACE: usize = 0x8000;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
 pub struct VirtualMachine {
-    mem: [u16; MEM_ADDR_SPACE],
-    _reg: [u16; 8],
+    mem: Memory,
+    reg: Registers,
     _stack: Vec<u16>,
-    pc: usize,
 }
 
 impl VirtualMachine {
     pub fn new() -> Self {
         VirtualMachine {
-            mem: [0; MEM_ADDR_SPACE],
-            _reg: [0; 8],
+            mem: Memory::new(),
+            reg: Registers::new(),
             _stack: Vec::with_capacity(0x10000),
-            pc: 0,
         }
     }
 
@@ -34,27 +34,34 @@ impl VirtualMachine {
         }
 
         for i in 0..bytecode.len() / 2 {
-            self.mem[i] = u16::from_le_bytes([bytecode[i * 2], bytecode[i * 2 + 1]]);
+            self.mem.write(
+                i,
+                u16::from_le_bytes([bytecode[i * 2], bytecode[i * 2 + 1]]),
+            )?;
         }
 
         Ok(self)
     }
 
-    pub fn exec(mut self) -> Result<()> {
-        for _ in 0..MEM_ADDR_SPACE {
-            match self.mem[self.pc] {
+    pub fn run(mut self) -> Result<()> {
+        loop {
+            match self.mem.read()? {
                 op::HALT => return Ok(()),
-                op::OUT => {
-                    self.pc += 1;
-                    print!("{}", self.mem[self.pc] as u8 as char);
+
+                op::SET => {
+                    let reg = self.mem.next().read()?;
+                    let val = self.mem.next().read()?;
+                    self.reg.write(reg, val)?;
                 }
+
+                op::OUT => print!("{}", self.mem.next().read_char()?),
+
                 op::NOOP => {}
+
                 x => return Err(Error::InvalidOperation(x)),
             }
 
-            self.pc += 1;
+            self.mem.next();
         }
-
-        Ok(())
     }
 }
