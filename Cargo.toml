@@ -1,13 +1,8 @@
 [package]
 name = "synacor-vm"
 description = "Virtual Machine Implementation for the Synacor Challenge"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Jak Rowan <jak@rowan.li>"]
 repository = "git@github.com:JakRowan/synacor-vm.git"
 readme = "README.md"
 publish = false
-
-[dependencies]
-serde = { version = "1", features = ["derive"] }
-serde-big-array = "0.1"
-ron = "0.5"
