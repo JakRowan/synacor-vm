@@ -5,6 +5,7 @@ use std::{
 
 use super::MEM_ADDR_SPACE;
 
+/// Standard error type for the VirtualMachine
 #[derive(Debug)]
 pub enum Error {
     BadBytecodeFormat,
