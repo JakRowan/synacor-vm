@@ -1,8 +1,10 @@
-mod err;
+mod error;
 mod op;
 
-use self::{err::Error, op::Op};
-use std::io::{self, Read};
+use crate::{
+    shell::Shell,
+    vm::{error::Error, op::Op},
+};
 
 const MEM_ADDR_SPACE: usize = 0x8000;
 const FIFTEEN_BIT_MODULO: u16 = 0x8000;
@@ -16,6 +18,7 @@ pub struct VirtualMachine {
     reg: [u16; 8],
     stack: Vec<u16>,
     pc: usize,
+    shell: Shell,
 }
 
 impl VirtualMachine {
@@ -26,6 +29,7 @@ impl VirtualMachine {
             reg: [0; 8],
             stack: Vec::with_capacity(0x10000),
             pc: 0,
+            shell: Shell::new(),
         }
     }
 
@@ -203,13 +207,17 @@ impl VirtualMachine {
                 OUT => print!("{}", self.inc_pc().read_char()?),
 
                 IN => {
-                    let out_addr = self.inc_pc().read_mem()?;
-                    let c = match io::stdin().bytes().nth(0) {
-                        Some(Ok(c)) => c,
-                        _ => return Err(Error::ReadInputErr { pc: self.pc }),
-                    };
+                    if let Err(_) = self.shell.run() {
+                        return Err(Error::ReadInputErr { pc: self.pc });
+                    }
 
-                    self.write(out_addr, c.into())?;
+                    let out_addr = self.inc_pc().read_mem()?;
+                    let c = self.shell.stdin().read_byte();
+
+                    if c == b'\n' {
+                        self.shell.standby();
+                    }
+                    self.write(out_addr, c as u16)?;
                 }
 
                 NOOP => {}
