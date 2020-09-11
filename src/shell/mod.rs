@@ -1,4 +1,7 @@
-use std::io::{self, Read, Write};
+mod command;
+
+use self::command::EvalStatus;
+use std::io::{self, Write};
 
 pub struct Stdin {
     buffer: Vec<u8>,
@@ -13,6 +16,11 @@ impl Stdin {
         }
     }
 
+    pub fn read_byte(&mut self) -> u8 {
+        self.slice_idx += 1;
+        self.buffer[self.slice_idx - 1]
+    }
+
     fn read_line_to_buffer(&mut self) -> io::Result<()> {
         let mut line = String::new();
 
@@ -23,9 +31,8 @@ impl Stdin {
         Ok(())
     }
 
-    pub fn read_byte(&mut self) -> u8 {
-        self.slice_idx += 1;
-        self.buffer[self.slice_idx - 1]
+    fn to_string(&self) -> String {
+        self.buffer.iter().map(|x| *x as char).collect()
     }
 }
 
@@ -37,7 +44,7 @@ pub enum ShellState {
 
 pub struct Shell {
     state: ShellState,
-    stdin: Stdin,
+    pub stdin: Stdin,
 }
 
 impl Shell {
@@ -49,27 +56,31 @@ impl Shell {
     }
 
     pub fn run(&mut self) -> io::Result<()> {
-        if self.state == ShellState::Standby {
+        while let ShellState::Standby = self.state {
             self.prompt()?;
 
             self.stdin.read_line_to_buffer()?;
-            self.state = ShellState::ProcessingInput;
+            self.process_input();
         }
 
         Ok(())
-    }
-
-    pub fn prompt(&mut self) -> io::Result<()> {
-        let mut out = io::stdout();
-        out.write(b"> ")?;
-        out.flush()
     }
 
     pub fn standby(&mut self) {
         self.state = ShellState::Standby;
     }
 
-    pub fn stdin(&mut self) -> &mut Stdin {
-        &mut self.stdin
+    fn prompt(&mut self) -> io::Result<()> {
+        let mut out = io::stdout();
+        out.write(b"> ")?;
+        out.flush()
+    }
+
+    fn process_input(&mut self) {
+        self.state = ShellState::ProcessingInput;
+
+        if command::eval(&self.stdin.to_string()) != EvalStatus::CommandNotFound {
+            self.state = ShellState::Standby;
+        }
     }
 }

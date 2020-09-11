@@ -212,7 +212,7 @@ impl VirtualMachine {
                     }
 
                     let out_addr = self.inc_pc().read_mem()?;
-                    let c = self.shell.stdin().read_byte();
+                    let c = self.shell.stdin.read_byte();
 
                     if c == b'\n' {
                         self.shell.standby();
