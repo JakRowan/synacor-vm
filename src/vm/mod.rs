@@ -18,10 +18,10 @@ type Stack = Vec<u16>;
 
 #[derive(Deserialize, Serialize)]
 pub struct VirtualMachineState {
-    pub mem: Vec<u16>,
-    pub reg: Registers,
-    pub stack: Stack,
-    pub pc: usize,
+    pub(crate) mem: Vec<u16>,
+    pub(crate) reg: Registers,
+    pub(crate) stack: Stack,
+    pub(crate) pc: usize,
 }
 
 impl VirtualMachineState {
@@ -37,10 +37,10 @@ impl VirtualMachineState {
 
 /// The Synacor Virtual Machine implementation.
 pub struct VirtualMachine {
-    mem: Memory,
-    reg: Registers,
-    stack: Stack,
-    pc: usize,
+    pub(crate) mem: Memory,
+    pub(crate) reg: Registers,
+    pub(crate) stack: Stack,
+    pub(crate) pc: usize,
     shell: Shell,
 }
 

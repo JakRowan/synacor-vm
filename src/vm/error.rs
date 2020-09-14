@@ -17,6 +17,7 @@ pub enum Error {
     MemOutOfBoundsAccess { pc: usize },
     PopFromEmptyStack { pc: usize },
     ReadInputErr { pc: usize },
+    DeserializeErr { pc: usize, error: ron::Error },
     SerializeErr { pc: usize, error: ron::Error },
     IoErr { pc: usize, error: io::Error },
 }
@@ -51,6 +52,11 @@ impl Display for Error {
             Error::ReadInputErr { pc } => {
                 write!(f, "Could not read user input from stdin at {:#06x}.", pc)
             }
+            Error::DeserializeErr { pc, error } => write!(
+                f,
+                "Could not deerialize VM state at {:#06x}.\nError:\n{}",
+                pc, error
+            ),
             Error::SerializeErr { pc, error } => write!(
                 f,
                 "Could not serialize VM state at {:#06x}.\nError:\n{}",
