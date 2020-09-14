@@ -2,12 +2,16 @@ use crate::VirtualMachine;
 
 enum CommandName {
     Ping,
+    Exit,
 }
 
 impl CommandName {
     fn from_input(input: &str) -> Option<Self> {
+        use self::CommandName::*;
+
         match input.split_whitespace().nth(0) {
-            Some("ping") => Some(CommandName::Ping),
+            Some("ping") => Some(Ping),
+            Some("exit") => Some(Exit),
             _ => None,
         }
     }
@@ -30,12 +34,19 @@ impl Command {
 
     /// Executes the command
     pub fn run(self, _vm: &mut VirtualMachine) {
+        use self::CommandName::*;
+
         match self.name {
-            CommandName::Ping => ping(),
+            Ping => ping(),
+            Exit => exit(),
         }
     }
 }
 
 fn ping() {
     println!("Pong!\n");
+}
+
+fn exit() {
+    std::process::exit(0);
 }

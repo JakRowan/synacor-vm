@@ -1,23 +1,27 @@
 extern crate synacor_vm;
 
-use std::{env, fmt, fs, io};
+use std::{env, fmt, fs, process};
 use synacor_vm::VirtualMachine;
 
-fn main() -> io::Result<()> {
+fn main() {
     let command = env::args().nth(1).unwrap_or("help".into());
 
     match command.as_ref() {
         "help" => {
             print_usage();
-            return Ok(());
         }
 
         "run" => {
             let bytecode = match env::args().nth(2) {
-                Some(filepath) => fs::read(filepath)?,
+                Some(filepath) => match fs::read(filepath) {
+                    Ok(x) => x,
+                    Err(e) => {
+                        eprintln!("{}", e);
+                        process::exit(1);
+                    }
+                },
                 None => {
-                    print_err_usage("No <bytcode_file> supplied.");
-                    return Ok(());
+                    return print_err_usage("No <bytcode_file> supplied.");
                 }
             };
 
@@ -26,8 +30,8 @@ fn main() -> io::Result<()> {
                 .map(|vm| vm.run())
             {
                 Ok(Err(e)) | Err(e) => {
-                    println!("Error: {}", e);
-                    return Ok(());
+                    eprintln!("{}", e);
+                    process::exit(1);
                 }
                 _ => {}
             }
@@ -35,11 +39,8 @@ fn main() -> io::Result<()> {
 
         x => {
             print_err_usage(format!("\"{}\" is not a valid command.", x));
-            return Ok(());
         }
     }
-
-    Ok(())
 }
 
 fn print_usage() {
@@ -55,4 +56,5 @@ fn print_usage() {
 fn print_err_usage<'a, M: fmt::Display>(err_msg: M) {
     println!("{}\n", err_msg);
     print_usage();
+    process::exit(1);
 }
