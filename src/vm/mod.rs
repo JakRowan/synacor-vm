@@ -1,7 +1,7 @@
 mod err;
 mod op;
 
-use self::err::Error;
+use self::{err::Error, op::Op};
 use std::io::{self, Read};
 
 const MEM_ADDR_SPACE: usize = 0x8000;
@@ -52,22 +52,24 @@ impl VirtualMachine {
 
     /// Runs the virtual machine starting with instruction at memory address 0x0000.
     pub fn run(mut self) -> Result<()> {
-        loop {
-            match self.read()? {
-                op::HALT => return Ok(()),
+        use self::Op::*;
 
-                op::SET => {
+        loop {
+            match Op::from_u16(self.read()?) {
+                HALT => return Ok(()),
+
+                SET => {
                     let out_addr = self.inc_pc().read_mem()?;
                     let val = self.inc_pc().read()?;
                     self.write(out_addr, val)?;
                 }
 
-                op::PUSH => {
+                PUSH => {
                     let val = self.inc_pc().read()?;
                     self.stack.push(val);
                 }
 
-                op::POP => {
+                POP => {
                     let out_addr = self.inc_pc().read_mem()?;
                     if let Some(val) = self.stack.pop() {
                         self.write(out_addr, val)?;
@@ -76,7 +78,7 @@ impl VirtualMachine {
                     }
                 }
 
-                op::EQ => {
+                EQ => {
                     let addr = self.inc_pc().read_mem()?;
                     let a = self.inc_pc().read()?;
                     let b = self.inc_pc().read()?;
@@ -84,7 +86,7 @@ impl VirtualMachine {
                     self.write(addr, if a == b { 1 } else { 0 })?;
                 }
 
-                op::GT => {
+                GT => {
                     let out_addr = self.inc_pc().read_mem()?;
                     let a = self.inc_pc().read()?;
                     let b = self.inc_pc().read()?;
@@ -92,13 +94,13 @@ impl VirtualMachine {
                     self.write(out_addr, if a > b { 1 } else { 0 })?;
                 }
 
-                op::JMP => {
+                JMP => {
                     let addr = self.inc_pc().read()?;
                     self.set_pc(addr);
                     continue;
                 }
 
-                op::JT => {
+                JT => {
                     let predicate = self.inc_pc().read()?;
                     let addr = self.inc_pc().read()?;
 
@@ -108,7 +110,7 @@ impl VirtualMachine {
                     }
                 }
 
-                op::JF => {
+                JF => {
                     let predicate = self.inc_pc().read()?;
                     let addr = self.inc_pc().read()?;
 
@@ -118,7 +120,7 @@ impl VirtualMachine {
                     }
                 }
 
-                op::ADD => {
+                ADD => {
                     let out_addr = self.inc_pc().read_mem()?;
                     let a = self.inc_pc().read()?;
                     let b = self.inc_pc().read()?;
@@ -126,7 +128,7 @@ impl VirtualMachine {
                     self.write(out_addr, VirtualMachine::math_15_bit(a, b, |x, y| x + y))?;
                 }
 
-                op::MULT => {
+                MULT => {
                     let out_addr = self.inc_pc().read_mem()?;
                     let a = self.inc_pc().read()?;
                     let b = self.inc_pc().read()?;
@@ -134,7 +136,7 @@ impl VirtualMachine {
                     self.write(out_addr, VirtualMachine::math_15_bit(a, b, |x, y| x * y))?;
                 }
 
-                op::MOD => {
+                MOD => {
                     let out_addr = self.inc_pc().read_mem()?;
                     let a = self.inc_pc().read()?;
                     let b = self.inc_pc().read()?;
@@ -142,7 +144,7 @@ impl VirtualMachine {
                     self.write(out_addr, a % b)?;
                 }
 
-                op::AND => {
+                AND => {
                     let out_addr = self.inc_pc().read_mem()?;
                     let a = self.inc_pc().read()?;
                     let b = self.inc_pc().read()?;
@@ -150,7 +152,7 @@ impl VirtualMachine {
                     self.write(out_addr, VirtualMachine::math_15_bit(a, b, |x, y| x & y))?;
                 }
 
-                op::OR => {
+                OR => {
                     let out_addr = self.inc_pc().read_mem()?;
                     let a = self.inc_pc().read()?;
                     let b = self.inc_pc().read()?;
@@ -158,14 +160,14 @@ impl VirtualMachine {
                     self.write(out_addr, VirtualMachine::math_15_bit(a, b, |x, y| x | y))?;
                 }
 
-                op::NOT => {
+                NOT => {
                     let out_addr = self.inc_pc().read_mem()?;
                     let a = self.inc_pc().read()?;
 
                     self.write(out_addr, !a % FIFTEEN_BIT_MODULO)?;
                 }
 
-                op::RMEM => {
+                RMEM => {
                     let out_addr = self.inc_pc().read_mem()?;
                     let val_addr = self.inc_pc().read()?;
                     let val = self.read_from_addr(val_addr)?;
@@ -173,14 +175,14 @@ impl VirtualMachine {
                     self.write(out_addr, val)?;
                 }
 
-                op::WMEM => {
+                WMEM => {
                     let out_addr = self.inc_pc().read()?;
                     let val = self.inc_pc().read()?;
 
                     self.write(out_addr, val)?;
                 }
 
-                op::CALL => {
+                CALL => {
                     let jmp_addr = self.inc_pc().read()?;
                     self.stack.push(self.pc as u16 + 1);
 
@@ -188,7 +190,7 @@ impl VirtualMachine {
                     continue;
                 }
 
-                op::RET => {
+                RET => {
                     if let Some(addr) = self.stack.pop() {
                         self.set_pc(addr);
                         continue;
@@ -198,9 +200,9 @@ impl VirtualMachine {
                     }
                 }
 
-                op::OUT => print!("{}", self.inc_pc().read_char()?),
+                OUT => print!("{}", self.inc_pc().read_char()?),
 
-                op::IN => {
+                IN => {
                     let out_addr = self.inc_pc().read_mem()?;
                     let c = match io::stdin().bytes().nth(0) {
                         Some(Ok(c)) => c,
@@ -210,12 +212,12 @@ impl VirtualMachine {
                     self.write(out_addr, c.into())?;
                 }
 
-                op::NOOP => {}
+                NOOP => {}
 
-                op => {
+                Unknown { opcode } => {
                     return Err(Error::InvalidOperation {
                         pc: self.pc,
-                        operation: op,
+                        operation: opcode,
                     })
                 }
             }
