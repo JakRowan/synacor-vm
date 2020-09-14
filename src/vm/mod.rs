@@ -11,12 +11,15 @@ const FIFTEEN_BIT_MODULO: u16 = 0x8000;
 
 /// The standard Result type for VirtualMachine
 pub type Result<T> = std::result::Result<T, Error>;
+type Memory = [u16; MEM_ADDR_SPACE];
+type Registers = [u16; 8];
+type Stack = Vec<u16>;
 
 /// The Synacor Virtual Machine implementation.
 pub struct VirtualMachine {
-    mem: [u16; MEM_ADDR_SPACE],
-    reg: [u16; 8],
-    stack: Vec<u16>,
+    mem: Memory,
+    reg: Registers,
+    stack: Stack,
     pc: usize,
     shell: Shell,
 }
@@ -207,8 +210,17 @@ impl VirtualMachine {
                 OUT => print!("{}", self.inc_pc().read_char()?),
 
                 IN => {
-                    if let Err(_) = self.shell.run() {
-                        return Err(Error::ReadInputErr { pc: self.pc });
+                    loop {
+                        match self
+                            .shell
+                            .process_input()
+                            .map_err(|_| Error::ReadInputErr { pc: self.pc })?
+                        {
+                            Some(cmd) => cmd.run(&mut self),
+                            None => break,
+                        }
+
+                        self.shell.standby();
                     }
 
                     let out_addr = self.inc_pc().read_mem()?;

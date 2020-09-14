@@ -1,8 +1,7 @@
-mod command;
-
-use self::command::EvalStatus;
+use crate::command::Command;
 use std::io::{self, Write};
 
+/// A helper struct to read from stdin without having to consume it.
 pub struct Stdin {
     buffer: Vec<u8>,
     slice_idx: usize,
@@ -16,6 +15,7 @@ impl Stdin {
         }
     }
 
+    /// Reads the first byte available, and sets the internal index to the next available byte.
     pub fn read_byte(&mut self) -> u8 {
         self.slice_idx += 1;
         self.buffer[self.slice_idx - 1]
@@ -36,12 +36,14 @@ impl Stdin {
     }
 }
 
+/// Describes the states of the Shell
 #[derive(Clone, Copy, PartialEq)]
 pub enum ShellState {
     ProcessingInput,
     Standby,
 }
 
+/// A helper struct for handling user input outside of the VM instructions
 pub struct Shell {
     state: ShellState,
     pub stdin: Stdin,
@@ -55,17 +57,22 @@ impl Shell {
         }
     }
 
-    pub fn run(&mut self) -> io::Result<()> {
-        while let ShellState::Standby = self.state {
-            self.prompt()?;
-
-            self.stdin.read_line_to_buffer()?;
-            self.process_input();
+    /// Reads input from `io::stdin` and returns a command if appropriate.
+    pub fn process_input(&mut self) -> io::Result<Option<Command>> {
+        if self.state != ShellState::Standby {
+            return Ok(None);
         }
 
-        Ok(())
+        self.state = ShellState::ProcessingInput;
+
+        self.prompt()?;
+        self.stdin.read_line_to_buffer()?;
+
+        Ok(Command::from_str(&self.stdin.to_string()))
     }
 
+    /// Places the shell into the Standby state, where it will wait to process input at the next
+    /// opportunity.
     pub fn standby(&mut self) {
         self.state = ShellState::Standby;
     }
@@ -74,13 +81,5 @@ impl Shell {
         let mut out = io::stdout();
         out.write(b"> ")?;
         out.flush()
-    }
-
-    fn process_input(&mut self) {
-        self.state = ShellState::ProcessingInput;
-
-        if command::eval(&self.stdin.to_string()) != EvalStatus::CommandNotFound {
-            self.state = ShellState::Standby;
-        }
     }
 }
