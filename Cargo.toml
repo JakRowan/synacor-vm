@@ -6,3 +6,7 @@ authors = ["Jak Rowan <jak@rowan.li>"]
 repository = "git@github.com:JakRowan/synacor-vm.git"
 readme = "README.md"
 publish = false
+
+[dependencies]
+serde = "1.0.116"
+ron = "0.6.2"

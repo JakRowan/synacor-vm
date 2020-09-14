@@ -1,6 +1,8 @@
+use ron;
 use std::{
     error,
     fmt::{self, Display},
+    io,
 };
 
 use super::MEM_ADDR_SPACE;
@@ -15,6 +17,8 @@ pub enum Error {
     MemOutOfBoundsAccess { pc: usize },
     PopFromEmptyStack { pc: usize },
     ReadInputErr { pc: usize },
+    SerializeErr { pc: usize, error: ron::Error },
+    IoErr { pc: usize, error: io::Error },
 }
 
 impl Display for Error {
@@ -47,6 +51,12 @@ impl Display for Error {
             Error::ReadInputErr { pc } => {
                 write!(f, "Could not read user input from stdin at {:#06x}.", pc)
             }
+            Error::SerializeErr { pc, error } => write!(
+                f,
+                "Could not serialize VM state at {:#06x}.\nError:\n{}",
+                pc, error
+            ),
+            Error::IoErr { pc, error } => write!(f, "IO error at {:#06x}.\nError:\n{}", pc, error),
         }
     }
 }

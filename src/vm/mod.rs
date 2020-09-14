@@ -1,10 +1,11 @@
-mod error;
+pub mod error;
 mod op;
 
 use crate::{
     shell::Shell,
     vm::{error::Error, op::Op},
 };
+use serde::{Deserialize, Serialize};
 
 const MEM_ADDR_SPACE: usize = 0x8000;
 const FIFTEEN_BIT_MODULO: u16 = 0x8000;
@@ -14,6 +15,25 @@ pub type Result<T> = std::result::Result<T, Error>;
 type Memory = [u16; MEM_ADDR_SPACE];
 type Registers = [u16; 8];
 type Stack = Vec<u16>;
+
+#[derive(Deserialize, Serialize)]
+pub struct VirtualMachineState {
+    pub mem: Vec<u16>,
+    pub reg: Registers,
+    pub stack: Stack,
+    pub pc: usize,
+}
+
+impl VirtualMachineState {
+    pub fn new(vm: &VirtualMachine) -> Self {
+        VirtualMachineState {
+            mem: vm.mem.iter().map(|&x| x).collect(),
+            reg: vm.reg.clone(),
+            stack: vm.stack.clone(),
+            pc: vm.pc,
+        }
+    }
+}
 
 /// The Synacor Virtual Machine implementation.
 pub struct VirtualMachine {
@@ -216,9 +236,9 @@ impl VirtualMachine {
                             .process_input()
                             .map_err(|_| Error::ReadInputErr { pc: self.pc })?
                         {
-                            Some(cmd) => cmd.run(&mut self),
+                            Some(cmd) => cmd.run(&mut self).and_then(|_| Ok(println!()))?,
                             None => break,
-                        }
+                        };
 
                         self.shell.standby();
                     }

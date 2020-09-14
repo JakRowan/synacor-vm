@@ -3,6 +3,9 @@
 //! Binaries are located in the `data` directory at the root of the repo. Information relevant to
 //! the challenge is located in `instructions`.
 
+extern crate ron;
+extern crate serde;
+
 mod command;
 mod shell;
 mod vm;
