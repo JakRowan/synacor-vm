@@ -1,27 +1,18 @@
-pub mod error;
 mod op;
 
-use crate::{
-    shell::Shell,
-    vm::{error::Error, op::Op},
-};
+use crate::{constants::*, error::Error, input_buffer::InputBuffer, vm::op::Op, Result};
 use serde::{Deserialize, Serialize};
 
-const MEM_ADDR_SPACE: usize = 0x8000;
-const FIFTEEN_BIT_MODULO: u16 = 0x8000;
-
-/// The standard Result type for VirtualMachine
-pub type Result<T> = std::result::Result<T, Error>;
 type Memory = [u16; MEM_ADDR_SPACE];
 type Registers = [u16; 8];
 type Stack = Vec<u16>;
 
 #[derive(Deserialize, Serialize)]
 pub struct VirtualMachineState {
-    pub(crate) mem: Vec<u16>,
-    pub(crate) reg: Registers,
-    pub(crate) stack: Stack,
-    pub(crate) pc: usize,
+    pub mem: Vec<u16>,
+    pub reg: Registers,
+    pub stack: Stack,
+    pub pc: usize,
 }
 
 impl VirtualMachineState {
@@ -37,11 +28,11 @@ impl VirtualMachineState {
 
 /// The Synacor Virtual Machine implementation.
 pub struct VirtualMachine {
-    pub(crate) mem: Memory,
-    pub(crate) reg: Registers,
-    pub(crate) stack: Stack,
-    pub(crate) pc: usize,
-    shell: Shell,
+    mem: Memory,
+    reg: Registers,
+    stack: Stack,
+    pc: usize,
+    input_buffer: InputBuffer,
 }
 
 impl VirtualMachine {
@@ -52,7 +43,7 @@ impl VirtualMachine {
             reg: [0; 8],
             stack: Vec::with_capacity(0x10000),
             pc: 0,
-            shell: Shell::new(),
+            input_buffer: InputBuffer::new(),
         }
     }
 
@@ -230,24 +221,21 @@ impl VirtualMachine {
                 OUT => print!("{}", self.inc_pc().read_char()?),
 
                 IN => {
-                    loop {
-                        match self
-                            .shell
-                            .process_input()
-                            .map_err(|_| Error::ReadInputErr { pc: self.pc })?
-                        {
-                            Some(cmd) => cmd.run(&mut self).and_then(|_| Ok(println!()))?,
-                            None => break,
-                        };
-
-                        self.shell.standby();
+                    let pc = self.pc;
+                    while let Some((cmd, args)) = self
+                        .input_buffer
+                        .process_input()
+                        .map_err(|_| Error::ReadInputErr { pc })?
+                    {
+                        cmd.run(args, &mut self)?;
+                        self.input_buffer.standby();
                     }
 
                     let out_addr = self.inc_pc().read_mem()?;
-                    let c = self.shell.stdin.read_byte();
+                    let c = self.input_buffer.read_byte();
 
                     if c == b'\n' {
-                        self.shell.standby();
+                        self.input_buffer.standby();
                     }
                     self.write(out_addr, c as u16)?;
                 }
@@ -269,18 +257,40 @@ impl VirtualMachine {
     //
     // VirtualMachine Runtime Helpers
     // ------------------------------
-    /// Increments the program counter.
-    fn inc_pc(&mut self) -> &Self {
-        self.pc += 1;
-        self
+    /// Loads memory into the VM from a &[u16].
+    pub(crate) fn load_mem(&mut self, memory: &[u16]) {
+        for i in 0..self.mem.len() {
+            self.mem[i] = *memory.get(i).unwrap_or(&0);
+        }
+    }
+
+    /// Sets the registers to the given array.
+    pub(crate) fn set_registers(&mut self, registers: Registers) {
+        self.reg = registers;
+    }
+
+    /// Sets the stack to the given vector.
+    pub(crate) fn set_stack(&mut self, stack: Stack) {
+        self.stack = stack;
     }
 
     /// Sets the program counter to address.
-    fn set_pc<A>(&mut self, addr: A) -> &Self
+    pub(crate) fn set_pc<A>(&mut self, addr: A) -> &Self
     where
         A: Into<usize>,
     {
         self.pc = addr.into();
+        self
+    }
+
+    /// Gets the program counter.
+    pub(crate) fn pc(&mut self) -> usize {
+        self.pc
+    }
+
+    /// Increments the program counter.
+    fn inc_pc(&mut self) -> &Self {
+        self.pc += 1;
         self
     }
 

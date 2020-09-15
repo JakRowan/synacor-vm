@@ -20,9 +20,7 @@ fn main() {
                         process::exit(1);
                     }
                 },
-                None => {
-                    return print_err_usage("No <bytcode_file> supplied.");
-                }
+                None => print_err_usage("No <bytcode_file> supplied."),
             };
 
             match VirtualMachine::new()
@@ -37,9 +35,7 @@ fn main() {
             }
         }
 
-        x => {
-            print_err_usage(format!("\"{}\" is not a valid command.", x));
-        }
+        x => print_err_usage(format!("\"{}\" is not a valid command.", x)),
     }
 }
 
@@ -53,8 +49,8 @@ fn print_usage() {
     println!("    synacor-vm run <input>  Run compiled synacor binary");
 }
 
-fn print_err_usage<'a, M: fmt::Display>(err_msg: M) {
+fn print_err_usage<M: fmt::Display>(err_msg: M) -> ! {
     println!("{}\n", err_msg);
     print_usage();
-    process::exit(1);
+    process::exit(1)
 }

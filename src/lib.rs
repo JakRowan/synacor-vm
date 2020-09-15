@@ -7,8 +7,13 @@ extern crate ron;
 extern crate serde;
 
 mod command;
-mod shell;
+mod constants;
+mod error;
+mod input_buffer;
 mod vm;
 
-pub use vm::Result;
+/// The standard Result type for VirtualMachine
+pub type Result<T> = std::result::Result<T, error::Error>;
+
+pub use error::Error;
 pub use vm::VirtualMachine;

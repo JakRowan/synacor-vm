@@ -5,7 +5,7 @@ use std::{
     io,
 };
 
-use super::MEM_ADDR_SPACE;
+use crate::constants::*;
 
 /// Standard error type for the VirtualMachine
 #[derive(Debug)]
