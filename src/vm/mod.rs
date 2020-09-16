@@ -258,15 +258,20 @@ impl VirtualMachine {
     }
 
     /// Converts the VM's current memory layout into assembly.
-    pub fn disassemble(&self) -> String {
+    pub fn disassemble(&self, include_addresses: bool) -> String {
         let mut asm = String::new();
         let mut remaining_args = 0;
 
-        for &x in self.mem.iter() {
+        for (i, &x) in self.mem.iter().enumerate() {
             let op = Op::from_u16(x);
+            let address = if include_addresses && remaining_args == 0 {
+                format!("{:#06x}:\t", i)
+            } else {
+                "".into()
+            };
 
             if Op::is_op(x) && remaining_args == 0 {
-                asm.push_str(&format!("\n{}", op));
+                asm.push_str(&format!("\n{}{}", address, op));
                 remaining_args = op.arg_count();
 
                 continue;
@@ -277,7 +282,7 @@ impl VirtualMachine {
             if Self::is_reg(x) {
                 asm.push_str(&format!("{}{}", delimeter, op));
             } else {
-                asm.push_str(&format!("{}{:04x}", delimeter, x));
+                asm.push_str(&format!("{}{}{:04x}", delimeter, address, x));
             }
             remaining_args = remaining_args.checked_sub(1).unwrap_or(0);
         }

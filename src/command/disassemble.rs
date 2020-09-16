@@ -22,7 +22,10 @@ impl CommandExecutor for DisassembleCommand {
             "{}\
 Usage:
     disassemble --help
-    disassemble <out_file>\
+    disassemble <outfile> [options]
+
+Options:
+    --with-addresses  Specify that the assembly should be addressed\
     ",
             if with_header {
                 "Disassemble Program Memory\n\n"
@@ -37,8 +40,9 @@ Usage:
     }
 
     fn exec(&self, args: Args, vm: &mut VirtualMachine) -> Result<()> {
+        let with_addresses = args.len() > 1 && args[1] == "--with-addresses";
         let out_path = &args[0];
-        let asm = vm.disassemble();
+        let asm = vm.disassemble(with_addresses);
 
         fs::write(out_path, asm).map_err(|error| Error::IoErr { pc: vm.pc(), error })
     }

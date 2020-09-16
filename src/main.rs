@@ -3,6 +3,33 @@ extern crate synacor_vm;
 use std::{env, fmt, fs, process};
 use synacor_vm::{Error, Result, VirtualMachine};
 
+#[derive(Default)]
+struct Options {
+    out: Option<String>,
+    asm_addresses: bool,
+}
+
+impl Options {
+    fn from_args() -> Self {
+        let mut opts = Options::default();
+
+        for arg in env::args() {
+            match arg.as_ref() {
+                x if x.starts_with("--out=") => opts.out = Some(x.chars().skip(6).collect()),
+                "--with-addresses" => {
+                    opts.asm_addresses = true;
+                }
+                x if x.starts_with("-") => print_err_usage(&format!(
+                    "No option \"{}\" exists",
+                    x.chars().take_while(|&c| c != '=').collect::<String>()
+                )),
+                _ => {}
+            }
+        }
+        opts
+    }
+}
+
 fn main() -> Result<()> {
     let command = env::args().nth(1).unwrap_or("help".into());
 
@@ -18,15 +45,17 @@ fn main() -> Result<()> {
 
         "disassemble" => {
             let bytecode = read_bytecode();
-            let outfile = match env::args().nth(3) {
-                Some(x) => x,
-                None => print_err_usage("No <outfile> supplied."),
-            };
+            let opts = Options::from_args();
             let asm = VirtualMachine::new()
                 .load_bytecode(&bytecode)?
-                .disassemble();
+                .disassemble(opts.asm_addresses);
 
-            fs::write(outfile, &asm).map_err(|error| Error::IoErr { pc: 0, error })?;
+            match opts.out {
+                Some(outfile) => {
+                    fs::write(outfile, &asm).map_err(|error| Error::IoErr { pc: 0, error })?
+                }
+                None => println!("{}", asm),
+            };
         }
 
         x => print_err_usage(format!("\"{}\" is not a valid command.", x)),
@@ -41,10 +70,15 @@ fn print_usage(print_header: bool) {
         println!("Virtual Machine and Reverse Engineering Tools");
         println!();
     }
+
     println!("Usage:");
     println!("    synacor-vm help                            Print this usage information");
     println!("    synacor-vm run <infile>                    Run compiled synacor binary");
-    println!("    synacor-vm disassemble <infile> <outfile>  Run compiled synacor binary");
+    println!("    synacor-vm disassemble <infile> [options]  Disassemble compiled synacor binary");
+    println!();
+    println!("Options:");
+    println!("    --out=<outfile>   Write to a given output file instead of stdout");
+    println!("    --with-addresses  Specify that the assembly should be addressed");
 }
 
 fn print_err_usage<M: fmt::Display>(err_msg: M) -> ! {
