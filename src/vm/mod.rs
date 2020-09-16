@@ -143,7 +143,10 @@ impl VirtualMachine {
                     let a = self.inc_pc().read()?;
                     let b = self.inc_pc().read()?;
 
-                    self.write(out_addr, VirtualMachine::math_15_bit(a, b, |x, y| x + y))?;
+                    self.write(
+                        out_addr,
+                        VirtualMachine::math_15_bit(a, b, |x, y| x.wrapping_add(y)),
+                    )?;
                 }
 
                 MULT => {
@@ -151,7 +154,10 @@ impl VirtualMachine {
                     let a = self.inc_pc().read()?;
                     let b = self.inc_pc().read()?;
 
-                    self.write(out_addr, VirtualMachine::math_15_bit(a, b, |x, y| x * y))?;
+                    self.write(
+                        out_addr,
+                        VirtualMachine::math_15_bit(a, b, |x, y| x.wrapping_mul(y)),
+                    )?;
                 }
 
                 MOD => {
@@ -339,12 +345,11 @@ impl VirtualMachine {
     }
 
     /// Perform math that will be wrapped to a 15-bit unsigned integer.
-    fn math_15_bit<A, F>(a: A, b: A, f: F) -> u16
+    fn math_15_bit<F>(a: u16, b: u16, f: F) -> u16
     where
-        A: Into<u32>,
-        F: Fn(u32, u32) -> u32,
+        F: Fn(u16, u16) -> u16,
     {
-        (f(a.into(), b.into()) % FIFTEEN_BIT_MODULO as u32) as u16
+        f(a.into(), b.into()) % FIFTEEN_BIT_MODULO
     }
 
     //
