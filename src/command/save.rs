@@ -18,15 +18,19 @@ impl CommandExecutor for SaveCommand {
         "Saves the vm state to a file".into()
     }
 
-    fn usage(&self) -> String {
-        "\
-Save Program State.
-
+    fn usage(&self, with_header: bool) -> String {
+        format!(
+            "{}\
 Usage:
     save --help
     save <out_file>\
-    "
-        .into()
+    ",
+            if with_header {
+                "Save Program State\n\n"
+            } else {
+                ""
+            }
+        )
     }
 
     fn required_args(&self) -> usize {

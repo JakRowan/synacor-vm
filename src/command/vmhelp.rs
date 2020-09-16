@@ -15,7 +15,7 @@ impl CommandExecutor for VmHelpCommand {
         "Prints this help text".into()
     }
 
-    fn usage(&self) -> String {
+    fn usage(&self, _: bool) -> String {
         format!(
             "\
 Synacor VM Shell
@@ -38,6 +38,6 @@ Commands:
     }
 
     fn exec(&self, _: Args, _: &mut VirtualMachine) -> Result<()> {
-        Ok(self.print_usage())
+        Ok(self.print_usage(true))
     }
 }

@@ -16,7 +16,7 @@ impl CommandExecutor for ExitCommand {
         "Exits the virtual machine runtime".into()
     }
 
-    fn usage(&self) -> String {
+    fn usage(&self, _: bool) -> String {
         "Exits the virtual machine runtime".into()
     }
 

@@ -1,13 +1,17 @@
+mod disassemble;
 mod exit;
 mod load;
 mod save;
 mod vmhelp;
 
-pub use self::{exit::ExitCommand, load::LoadCommand, save::SaveCommand, vmhelp::VmHelpCommand};
+pub use self::{
+    disassemble::DisassembleCommand, exit::ExitCommand, load::LoadCommand, save::SaveCommand,
+    vmhelp::VmHelpCommand,
+};
 
 use crate::{Result, VirtualMachine};
 
-const COMMAND_NAMES: [&str; 4] = ["vmhelp", "exit", "save", "load"];
+const COMMAND_NAMES: [&str; 5] = ["vmhelp", "exit", "save", "load", "disassemble"];
 
 pub type Args = Vec<String>;
 
@@ -29,6 +33,9 @@ impl Command {
             }),
             x if x == LoadCommand.name() => Some(Command {
                 cmd: Box::new(LoadCommand),
+            }),
+            x if x == DisassembleCommand.name() => Some(Command {
+                cmd: Box::new(DisassembleCommand),
             }),
             _ => None,
         }
@@ -53,22 +60,22 @@ impl Command {
 pub trait CommandExecutor {
     fn name(&self) -> String;
     fn descr(&self) -> String;
-    fn usage(&self) -> String;
+    fn usage(&self, with_header: bool) -> String;
     fn required_args(&self) -> usize;
     fn exec(&self, args: Args, vm: &mut VirtualMachine) -> Result<()>;
 
-    fn print_usage(&self) {
-        println!("{}\n", self.usage());
+    fn print_usage(&self, with_header: bool) {
+        println!("{}\n", self.usage(with_header));
     }
 
     fn run(&self, args: Args, vm: &mut VirtualMachine) -> Result<()> {
         if !args.is_empty() && args[0] == "--help" {
-            self.print_usage();
+            self.print_usage(true);
             return Ok(());
         }
         if args.len() < self.required_args() {
-            println!("Not enough arguments given.");
-            self.print_usage();
+            println!("Not enough arguments given.\n");
+            self.print_usage(false);
             return Ok(());
         }
 

@@ -18,15 +18,19 @@ impl CommandExecutor for LoadCommand {
         "Loads the vm state from a file".into()
     }
 
-    fn usage(&self) -> String {
-        "\
-Loads Program State
-
+    fn usage(&self, with_header: bool) -> String {
+        format!(
+            "{}\
 Usage:
     load --help
     load <state_file>\
-    "
-        .into()
+    ",
+            if with_header {
+                "Loads Program State\n\n"
+            } else {
+                ""
+            }
+        )
     }
 
     fn required_args(&self) -> usize {
