@@ -1,7 +1,10 @@
 mod op;
 
-use crate::{constants::*, error::Error, input_buffer::InputBuffer, vm::op::Op, Result};
+use crate::{error::Error, input_buffer::InputBuffer, vm::op::Op, Result};
 use serde::{Deserialize, Serialize};
+
+pub(crate) const MEM_ADDR_SPACE: usize = 0x8000;
+pub(crate) const FIFTEEN_BIT_MODULO: u16 = 0x8000;
 
 type Memory = [u16; MEM_ADDR_SPACE];
 type Registers = [u16; 8];
@@ -143,10 +146,7 @@ impl VirtualMachine {
                     let a = self.inc_pc().read()?;
                     let b = self.inc_pc().read()?;
 
-                    self.write(
-                        out_addr,
-                        VirtualMachine::math_15_bit(a, b, |x, y| x.wrapping_add(y)),
-                    )?;
+                    self.write(out_addr, Self::math_15_bit(a, b, |x, y| x.wrapping_add(y)))?;
                 }
 
                 MULT => {
@@ -154,10 +154,7 @@ impl VirtualMachine {
                     let a = self.inc_pc().read()?;
                     let b = self.inc_pc().read()?;
 
-                    self.write(
-                        out_addr,
-                        VirtualMachine::math_15_bit(a, b, |x, y| x.wrapping_mul(y)),
-                    )?;
+                    self.write(out_addr, Self::math_15_bit(a, b, |x, y| x.wrapping_mul(y)))?;
                 }
 
                 MOD => {
@@ -173,7 +170,7 @@ impl VirtualMachine {
                     let a = self.inc_pc().read()?;
                     let b = self.inc_pc().read()?;
 
-                    self.write(out_addr, VirtualMachine::math_15_bit(a, b, |x, y| x & y))?;
+                    self.write(out_addr, Self::math_15_bit(a, b, |x, y| x & y))?;
                 }
 
                 OR => {
@@ -181,7 +178,7 @@ impl VirtualMachine {
                     let a = self.inc_pc().read()?;
                     let b = self.inc_pc().read()?;
 
-                    self.write(out_addr, VirtualMachine::math_15_bit(a, b, |x, y| x | y))?;
+                    self.write(out_addr, Self::math_15_bit(a, b, |x, y| x | y))?;
                 }
 
                 NOT => {
@@ -307,7 +304,7 @@ impl VirtualMachine {
 
         let reg_or_val = self.mem[self.pc];
 
-        if VirtualMachine::is_reg(reg_or_val) {
+        if Self::is_reg(reg_or_val) {
             return self.read_reg(reg_or_val);
         }
 
@@ -317,7 +314,7 @@ impl VirtualMachine {
     /// Reads value from memory at the give address. If the address is a reference to a register,
     /// it will read the value contained in that register instead.
     fn read_from_addr(&self, addr: u16) -> Result<u16> {
-        if VirtualMachine::is_reg(addr) {
+        if Self::is_reg(addr) {
             return self.read_reg(addr);
         }
 
@@ -334,7 +331,7 @@ impl VirtualMachine {
     /// Writes given value to memory at given address. If the given address is a reference to a
     /// register, it will write the value to that register instead.
     fn write(&mut self, addr: u16, val: u16) -> Result<()> {
-        if VirtualMachine::is_reg(addr) {
+        if Self::is_reg(addr) {
             return self.write_reg(addr, val);
         }
 
@@ -375,7 +372,7 @@ impl VirtualMachine {
 
     /// Checks for validity of memory access.
     fn validate_access<A: Into<usize>>(&self, addr: A) -> Result<()> {
-        if addr.into() >= MEM_ADDR_SPACE {
+        if addr.into() >= FIFTEEN_BIT_MODULO.into() {
             return Err(Error::MemOutOfBoundsAccess { pc: self.pc });
         }
         Ok(())
@@ -400,7 +397,7 @@ impl VirtualMachine {
     where
         A: Into<usize>,
     {
-        let reg_idx = addr.into().wrapping_sub(MEM_ADDR_SPACE);
+        let reg_idx = addr.into().wrapping_sub(FIFTEEN_BIT_MODULO.into());
 
         reg_idx <= 7
     }
@@ -410,13 +407,13 @@ impl VirtualMachine {
     where
         A: Into<usize> + Copy,
     {
-        if !VirtualMachine::is_reg(reg_addr) {
+        if !Self::is_reg(reg_addr) {
             return Err(Error::InvalidRegister {
                 pc: self.pc,
                 register: reg_addr.into() as u16,
             });
         }
 
-        Ok(reg_addr.into().wrapping_sub(MEM_ADDR_SPACE))
+        Ok(reg_addr.into().wrapping_sub(FIFTEEN_BIT_MODULO.into()))
     }
 }
