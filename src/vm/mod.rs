@@ -245,16 +245,43 @@ impl VirtualMachine {
 
                 NOOP => {}
 
-                Unknown { opcode } => {
+                RegOrData(operation) => {
                     return Err(Error::InvalidOperation {
                         pc: self.pc,
-                        operation: opcode,
+                        operation,
                     })
                 }
             }
 
             self.inc_pc();
         }
+    }
+
+    /// Converts the VM's current memory layout into assembly.
+    pub fn disassemble(&self) -> String {
+        let mut asm = String::new();
+        let mut remaining_args = 0;
+
+        for &x in self.mem.iter() {
+            let op = Op::from_u16(x);
+
+            if Op::is_op(x) && remaining_args == 0 {
+                asm.push_str(&format!("\n{}", op));
+                remaining_args = op.arg_count();
+
+                continue;
+            }
+
+            let delimeter = if remaining_args == 0 { '\n' } else { '\t' };
+
+            if Self::is_reg(x) {
+                asm.push_str(&format!("{}{}", delimeter, op));
+            } else {
+                asm.push_str(&format!("{}{:04x}", delimeter, x));
+            }
+            remaining_args = remaining_args.checked_sub(1).unwrap_or(0);
+        }
+        asm
     }
 
     //
@@ -393,7 +420,7 @@ impl VirtualMachine {
     }
 
     /// Checks if a given address references a register.
-    fn is_reg<A>(addr: A) -> bool
+    pub(crate) fn is_reg<A>(addr: A) -> bool
     where
         A: Into<usize>,
     {
