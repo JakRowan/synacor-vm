@@ -1,17 +1,28 @@
 mod disassemble;
 mod exit;
 mod load;
+mod print_register;
 mod save;
+mod set_register;
 mod vmhelp;
 
 pub use self::{
-    disassemble::DisassembleCommand, exit::ExitCommand, load::LoadCommand, save::SaveCommand,
+    disassemble::DisassembleCommand, exit::ExitCommand, load::LoadCommand,
+    print_register::PrintRegisterCommand, save::SaveCommand, set_register::SetRegisterCommand,
     vmhelp::VmHelpCommand,
 };
 
-use crate::{Result, VirtualMachine};
+use crate::{constants::*, Result, VirtualMachine};
 
-const COMMAND_NAMES: [&str; 5] = ["vmhelp", "exit", "save", "load", "disassemble"];
+const COMMAND_NAMES: [&str; 7] = [
+    "vmhelp",
+    "exit",
+    "save",
+    "load",
+    "disassemble",
+    "setreg",
+    "printreg",
+];
 
 pub type Args = Vec<String>;
 
@@ -36,6 +47,12 @@ impl Command {
             }),
             x if x == DisassembleCommand.name() => Some(Command {
                 cmd: Box::new(DisassembleCommand),
+            }),
+            x if x == SetRegisterCommand.name() => Some(Command {
+                cmd: Box::new(SetRegisterCommand),
+            }),
+            x if x == PrintRegisterCommand.name() => Some(Command {
+                cmd: Box::new(PrintRegisterCommand),
             }),
             _ => None,
         }
@@ -81,4 +98,14 @@ pub trait CommandExecutor {
 
         self.exec(args, vm)
     }
+}
+
+pub fn reg_idx_from_str(s: &str) -> Option<u16> {
+    REG_NAMES.iter().enumerate().fold(None, |acc, (i, name)| {
+        if &s == name {
+            Some(i as u16 + 0x8000)
+        } else {
+            acc
+        }
+    })
 }

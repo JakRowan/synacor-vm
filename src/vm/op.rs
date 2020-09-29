@@ -107,8 +107,7 @@ impl fmt::Display for Op {
             RegOrData(n) => {
                 if VirtualMachine::is_reg(*n) {
                     let reg_idx: usize = n.wrapping_sub(FIFTEEN_BIT_MODULO).into();
-                    let register_names = ["AX", "BX", "CX", "DX", "EX", "FX", "GX", "HX"];
-                    write!(f, "{}", register_names[reg_idx])
+                    write!(f, "{}", REG_NAMES[reg_idx])
                 } else {
                     write!(f, "{:04x}", n)
                 }

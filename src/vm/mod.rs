@@ -319,7 +319,7 @@ impl VirtualMachine {
     }
 
     /// Gets the program counter.
-    pub(crate) fn pc(&mut self) -> usize {
+    pub(crate) fn pc(&self) -> usize {
         self.pc
     }
 
@@ -414,12 +414,12 @@ impl VirtualMachine {
     // Register Access Helpers
     // -----------------------
     /// Reads raw value from register.
-    fn read_reg(&self, register: u16) -> Result<u16> {
+    pub(crate) fn read_reg(&self, register: u16) -> Result<u16> {
         Ok(self.reg[self.get_reg_idx(register)?])
     }
 
     /// Writes value to register.
-    fn write_reg(&mut self, register: u16, val: u16) -> Result<()> {
+    pub(crate) fn write_reg(&mut self, register: u16, val: u16) -> Result<()> {
         self.reg[self.get_reg_idx(register)?] = val;
         Ok(())
     }
