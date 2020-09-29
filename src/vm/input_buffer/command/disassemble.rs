@@ -1,5 +1,4 @@
 use crate::{
-    error::Error,
     vm::input_buffer::command::{Args, CommandExecutor},
     Result, VirtualMachine,
 };
@@ -44,6 +43,7 @@ Options:
         let out_path = &args[0];
         let asm = vm.disassemble(with_addresses);
 
-        fs::write(out_path, asm).map_err(|error| Error::IoErr { pc: vm.pc(), error })
+        fs::write(out_path, asm)?;
+        Ok(())
     }
 }

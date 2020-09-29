@@ -3,6 +3,7 @@ use std::{
     error,
     fmt::{self, Display},
     io,
+    num::ParseIntError,
 };
 
 use crate::constants::*;
@@ -19,7 +20,8 @@ pub enum Error {
     ReadInputErr { pc: usize },
     DeserializeErr { pc: usize, error: ron::Error },
     SerializeErr { pc: usize, error: ron::Error },
-    IoErr { pc: usize, error: io::Error },
+    IoErr { error: io::Error },
+    ParseIntErr { error: ParseIntError },
 }
 
 impl Display for Error {
@@ -62,9 +64,22 @@ impl Display for Error {
                 "Could not serialize VM state at {:#06x}.\nError:\n{}",
                 pc, error
             ),
-            Error::IoErr { pc, error } => write!(f, "IO error at {:#06x}.\nError:\n{}", pc, error),
+            Error::IoErr { error } => write!(f, "IO error:\n{}", error),
+            Error::ParseIntErr { error } => write!(f, "ParseInt error:\n{}", error),
         }
     }
 }
 
 impl error::Error for Error {}
+
+impl From<io::Error> for Error {
+    fn from(error: io::Error) -> Self {
+        Error::IoErr { error }
+    }
+}
+
+impl From<ParseIntError> for Error {
+    fn from(error: ParseIntError) -> Self {
+        Error::ParseIntErr { error }
+    }
+}

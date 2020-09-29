@@ -41,7 +41,45 @@ impl Op {
         }
 
         unsafe {
-            return std::mem::transmute(n as u32);
+            return std::mem::transmute::<u32, Op>(n as u32);
+        }
+    }
+
+    pub fn to_u16(self) -> u16 {
+        if let RegOrData(x) = self {
+            return x;
+        }
+
+        unsafe {
+            return std::mem::transmute::<Op, u32>(self) as u16;
+        }
+    }
+
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s {
+            "HALT" => Some(HALT),
+            "SET" => Some(SET),
+            "PUSH" => Some(PUSH),
+            "POP" => Some(POP),
+            "EQ" => Some(EQ),
+            "GT" => Some(GT),
+            "JMP" => Some(JMP),
+            "JT" => Some(JT),
+            "JF" => Some(JF),
+            "ADD" => Some(ADD),
+            "MULT" => Some(MULT),
+            "MOD" => Some(MOD),
+            "AND" => Some(AND),
+            "OR" => Some(OR),
+            "NOT" => Some(NOT),
+            "RMEM" => Some(RMEM),
+            "WMEM" => Some(WMEM),
+            "CALL" => Some(CALL),
+            "RET" => Some(RET),
+            "OUT" => Some(OUT),
+            "IN" => Some(IN),
+            "NOOP" => Some(NOOP),
+            _ => None,
         }
     }
 
@@ -92,7 +130,7 @@ impl fmt::Display for Op {
             JT => write!(f, "  JT"),
             JF => write!(f, "  JF"),
             ADD => write!(f, " ADD"),
-            MULT => write!(f, " MUL"),
+            MULT => write!(f, "MULT"),
             MOD => write!(f, " MOD"),
             AND => write!(f, " AND"),
             OR => write!(f, "  OR"),

@@ -6,6 +6,7 @@
 extern crate ron;
 extern crate serde;
 
+pub mod assembler;
 pub mod teleporter;
 
 mod constants;

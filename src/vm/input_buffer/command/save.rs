@@ -42,17 +42,18 @@ Usage:
         let state = VirtualMachineState::new(vm);
 
         match ron::to_string(&state) {
-            Ok(serialized) => fs::write(out_path, serialized).map_err(|e| Error::IoErr {
-                pc: vm.pc(),
-                error: e,
-            }),
+            Ok(serialized) => {
+                fs::write(out_path, serialized).map_err(|e| Error::IoErr { error: e })?
+            }
 
             Err(e) => {
                 return Err(Error::SerializeErr {
                     pc: vm.pc(),
                     error: e,
-                })
+                });
             }
         }
+
+        Ok(())
     }
 }

@@ -38,10 +38,7 @@ Usage:
     }
 
     fn exec(&self, args: Args, vm: &mut VirtualMachine) -> Result<()> {
-        let state_str = fs::read_to_string(&args[0]).map_err(|e| Error::IoErr {
-            pc: vm.pc(),
-            error: e,
-        })?;
+        let state_str = fs::read_to_string(&args[0])?;
         let state = ron::from_str::<VirtualMachineState>(&state_str).map_err(|e| {
             Error::DeserializeErr {
                 pc: vm.pc(),

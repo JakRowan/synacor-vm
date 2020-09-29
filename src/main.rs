@@ -1,7 +1,7 @@
 extern crate synacor_vm;
 
 use std::{env, fmt, fs, process};
-use synacor_vm::{teleporter, Error, Result, VirtualMachine};
+use synacor_vm::{assembler, teleporter, Result, VirtualMachine};
 
 #[derive(Default)]
 struct Options {
@@ -43,6 +43,16 @@ fn main() -> Result<()> {
             VirtualMachine::new().load_bytecode(&bytecode)?.run()?;
         }
 
+        "assemble" => {
+            let (infile, outfile) = match (env::args().nth(2), env::args().nth(3)) {
+                (Some(x), Some(y)) => (x, y),
+                (Some(_), None) => print_err_usage("No outfile given."),
+                _ => print_err_usage("No infile or outfile given."),
+            };
+
+            return assembler::assemble(&infile, &outfile);
+        }
+
         "disassemble" => {
             let bytecode = read_bytecode();
             let opts = Options::from_args();
@@ -51,9 +61,7 @@ fn main() -> Result<()> {
                 .disassemble(opts.asm_addresses);
 
             match opts.out {
-                Some(outfile) => {
-                    fs::write(outfile, &asm).map_err(|error| Error::IoErr { pc: 0, error })?
-                }
+                Some(outfile) => fs::write(outfile, &asm)?,
                 None => println!("{}", asm),
             };
         }
@@ -95,6 +103,7 @@ fn print_usage(print_header: bool) {
     println!("Usage:");
     println!("    synacor-vm help                            Print this usage information");
     println!("    synacor-vm run <infile>                    Run compiled synacor binary");
+    println!("    synacor-vm assemble <infile> <outfile>     Assemble synacor asm into binary");
     println!("    synacor-vm disassemble <infile> [options]  Disassemble compiled synacor binary");
     println!("    synacor-vm solve-calibration [value]       Solve calibration for HX register");
     println!();

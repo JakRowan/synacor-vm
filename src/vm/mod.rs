@@ -1,5 +1,5 @@
 mod input_buffer;
-mod op;
+pub(crate) mod op;
 
 use crate::{
     error::Error,
