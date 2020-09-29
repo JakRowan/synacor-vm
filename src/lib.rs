@@ -6,6 +6,8 @@
 extern crate ron;
 extern crate serde;
 
+pub mod teleporter;
+
 mod command;
 mod constants;
 mod error;

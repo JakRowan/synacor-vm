@@ -1,7 +1,7 @@
 extern crate synacor_vm;
 
 use std::{env, fmt, fs, process};
-use synacor_vm::{Error, Result, VirtualMachine};
+use synacor_vm::{teleporter, Error, Result, VirtualMachine};
 
 #[derive(Default)]
 struct Options {
@@ -58,6 +58,27 @@ fn main() -> Result<()> {
             };
         }
 
+        "solve-calibration" => {
+            if let Some(hx) = env::args().nth(2) {
+                println!("Solving calibration for HX = {}", hx);
+                let hx: u16 = match hx.parse() {
+                    Ok(x) => x,
+                    _ => print_err_usage(format!("Could not parse HX as u16: {}", hx)),
+                };
+                let mut mem = teleporter::Memory::new(hx);
+                match teleporter::calibrate(&mut mem) {
+                    6 => println!("Set HX to {} for proper teleportation!", hx),
+                    x => println!("Result: {}, is not valid.", x),
+                }
+            } else {
+                println!("Solving calibration for HX...");
+                match teleporter::solve_calibration_for_hx() {
+                    Some(v) => println!("Set HX to {} for proper teleportation!", v),
+                    None => println!("No valid HX found! Something is wrong here..."),
+                }
+            }
+        }
+
         x => print_err_usage(format!("\"{}\" is not a valid command.", x)),
     }
     Ok(())
@@ -75,6 +96,7 @@ fn print_usage(print_header: bool) {
     println!("    synacor-vm help                            Print this usage information");
     println!("    synacor-vm run <infile>                    Run compiled synacor binary");
     println!("    synacor-vm disassemble <infile> [options]  Disassemble compiled synacor binary");
+    println!("    synacor-vm solve-calibration [value]       Solve calibration for HX register");
     println!();
     println!("Options:");
     println!("    --out=<outfile>   Write to a given output file instead of stdout");
