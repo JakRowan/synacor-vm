@@ -146,7 +146,7 @@ impl VirtualMachine {
                     let a = self.inc_pc().read()?;
                     let b = self.inc_pc().read()?;
 
-                    self.write(out_addr, Self::math_15_bit(a, b, |x, y| x.wrapping_add(y)))?;
+                    self.write(out_addr, a.wrapping_add(b) % FIFTEEN_BIT_MODULO)?;
                 }
 
                 MULT => {
@@ -154,7 +154,7 @@ impl VirtualMachine {
                     let a = self.inc_pc().read()?;
                     let b = self.inc_pc().read()?;
 
-                    self.write(out_addr, Self::math_15_bit(a, b, |x, y| x.wrapping_mul(y)))?;
+                    self.write(out_addr, a.wrapping_mul(b) % FIFTEEN_BIT_MODULO)?;
                 }
 
                 MOD => {
@@ -170,7 +170,7 @@ impl VirtualMachine {
                     let a = self.inc_pc().read()?;
                     let b = self.inc_pc().read()?;
 
-                    self.write(out_addr, Self::math_15_bit(a, b, |x, y| x & y))?;
+                    self.write(out_addr, a & b)?;
                 }
 
                 OR => {
@@ -178,7 +178,7 @@ impl VirtualMachine {
                     let a = self.inc_pc().read()?;
                     let b = self.inc_pc().read()?;
 
-                    self.write(out_addr, Self::math_15_bit(a, b, |x, y| x | y))?;
+                    self.write(out_addr, a | b)?;
                 }
 
                 NOT => {
@@ -371,14 +371,6 @@ impl VirtualMachine {
 
         self.mem[addr as usize] = val;
         Ok(())
-    }
-
-    /// Perform math that will be wrapped to a 15-bit unsigned integer.
-    fn math_15_bit<F>(a: u16, b: u16, f: F) -> u16
-    where
-        F: Fn(u16, u16) -> u16,
-    {
-        f(a.into(), b.into()) % FIFTEEN_BIT_MODULO
     }
 
     //
