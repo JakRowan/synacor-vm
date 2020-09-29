@@ -1,6 +1,6 @@
 use crate::{
-    command::{Args, CommandExecutor},
     error::Error,
+    vm::input_buffer::command::{Args, CommandExecutor},
     vm::VirtualMachineState,
     Result, VirtualMachine,
 };

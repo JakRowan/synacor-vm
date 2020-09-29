@@ -8,10 +8,8 @@ extern crate serde;
 
 pub mod teleporter;
 
-mod command;
 mod constants;
 mod error;
-mod input_buffer;
 mod vm;
 
 /// The standard Result type for VirtualMachine

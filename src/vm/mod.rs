@@ -1,6 +1,11 @@
+mod input_buffer;
 mod op;
 
-use crate::{error::Error, input_buffer::InputBuffer, vm::op::Op, Result};
+use crate::{
+    error::Error,
+    vm::{input_buffer::InputBuffer, op::Op},
+    Result,
+};
 use serde::{Deserialize, Serialize};
 
 pub(crate) const MEM_ADDR_SPACE: usize = 0x8000;

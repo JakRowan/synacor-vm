@@ -1,4 +1,6 @@
-use crate::command::{Args, Command};
+mod command;
+
+use self::command::{Args, Command};
 use std::io::{self, Write};
 
 #[derive(Clone, Copy, PartialEq)]

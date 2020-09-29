@@ -1,5 +1,5 @@
 use crate::{
-    command::{Args, Command, CommandExecutor},
+    vm::input_buffer::command::{Args, Command, CommandExecutor},
     Result, VirtualMachine,
 };
 

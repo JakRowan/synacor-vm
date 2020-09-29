@@ -1,5 +1,5 @@
 use crate::{
-    command::{Args, CommandExecutor},
+    vm::input_buffer::command::{Args, CommandExecutor},
     Result, VirtualMachine,
 };
 use std::process;

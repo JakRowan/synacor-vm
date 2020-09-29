@@ -1,6 +1,6 @@
 use crate::{
-    command::{reg_idx_from_str, Args, CommandExecutor},
     constants::*,
+    vm::input_buffer::command::{reg_idx_from_str, Args, CommandExecutor},
     Result, VirtualMachine,
 };
 
