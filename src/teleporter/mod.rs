@@ -40,35 +40,39 @@ pub fn calibrate(mem: &mut Memory) -> u16 {
     }
 
     loop {
-        let (n, y) = mem.stack.pop().unwrap();
+        let (ax, bx) = mem.stack.pop().unwrap();
 
-        if y != 1 {
-            mem.stack.push((n, y));
-            mem.stack.push((mem.hx.into(), mod15(y.wrapping_sub(1))));
+        if bx != 1 {
+            mem.stack.push((ax, bx));
+            mem.stack.push((mem.hx.into(), mod15(bx.wrapping_sub(1))));
             continue;
         }
 
+        // cal_a
         if mem.stack.len() == 0 {
-            return mod15(mem.hx.wrapping_add(n as u16 + 1));
+            return mod15(mem.hx.wrapping_add(ax as u16 + 1));
         }
 
-        let (m, x) = mem.stack.pop().unwrap();
+        // cal_b
+        let (cx, dx) = mem.stack.pop().unwrap();
 
-        if x == 2 {
+        if dx == 2 {
             mem.stack.push((
-                mod15(n + (m * (mem.hx as usize + 1))) as usize,
-                mod15(x.wrapping_sub(1)),
+                mod15(ax + (cx * (mem.hx as usize + 1))) as usize,
+                mod15(dx.wrapping_sub(1)),
             ));
             continue;
         }
 
-        if m - 1 > 0 {
-            mem.stack.push((m - 1, x));
+        // cal_c
+        if cx - 1 > 0 {
+            mem.stack.push((cx - 1, dx));
         }
 
+        // cal_d
         mem.stack.push((
-            mod15(n + mem.hx as usize + 1) as usize,
-            mod15(x.wrapping_sub(1)),
+            mod15(ax + mem.hx as usize + 1) as usize,
+            mod15(dx.wrapping_sub(1)),
         ));
     }
 }
