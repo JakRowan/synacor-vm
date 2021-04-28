@@ -2,19 +2,20 @@ mod disassemble;
 mod exit;
 mod load;
 mod print_register;
+mod print_stack;
 mod save;
 mod set_register;
 mod vmhelp;
 
 pub use self::{
     disassemble::DisassembleCommand, exit::ExitCommand, load::LoadCommand,
-    print_register::PrintRegisterCommand, save::SaveCommand, set_register::SetRegisterCommand,
-    vmhelp::VmHelpCommand,
+    print_register::PrintRegisterCommand, print_stack::PrintStackCommand, save::SaveCommand,
+    set_register::SetRegisterCommand, vmhelp::VmHelpCommand,
 };
 
 use crate::{constants::*, Result, VirtualMachine};
 
-const COMMAND_NAMES: [&str; 7] = [
+const COMMAND_NAMES: [&str; 8] = [
     "vmhelp",
     "exit",
     "save",
@@ -22,6 +23,7 @@ const COMMAND_NAMES: [&str; 7] = [
     "disassemble",
     "setreg",
     "printreg",
+    "printstack",
 ];
 
 pub type Args = Vec<String>;
@@ -53,6 +55,9 @@ impl Command {
             }),
             x if x == PrintRegisterCommand.name() => Some(Command {
                 cmd: Box::new(PrintRegisterCommand),
+            }),
+            x if x == PrintStackCommand.name() => Some(Command {
+                cmd: Box::new(PrintStackCommand),
             }),
             _ => None,
         }
