@@ -1,7 +1,7 @@
 extern crate synacor_vm;
 
 use std::{env, fmt, fs, process};
-use synacor_vm::{assembler, teleporter, Result, VirtualMachine};
+use synacor_vm::{assembler, teleporter, vault, Result, VirtualMachine};
 
 #[derive(Default)]
 struct Options {
@@ -87,6 +87,17 @@ fn main() -> Result<()> {
             }
         }
 
+        "solve-vault" => {
+            let max_depth = env::args()
+                .nth(2)
+                .map(|x| x.parse::<usize>().ok())
+                .flatten()
+                .unwrap_or(12);
+
+            println!("Solving vault access with max-depth = {}", max_depth);
+            vault::solve_vault(max_depth);
+        }
+
         x => print_err_usage(format!("\"{}\" is not a valid command.", x)),
     }
     Ok(())
@@ -106,6 +117,7 @@ fn print_usage(print_header: bool) {
     println!("    synacor-vm assemble <infile> <outfile>     Assemble synacor asm into binary");
     println!("    synacor-vm disassemble <infile> [options]  Disassemble compiled synacor binary");
     println!("    synacor-vm solve-calibration [value]       Solve calibration for HX register");
+    println!("    synacor-vm solve-vault [max_depth]         Solve vault access path");
     println!();
     println!("Options:");
     println!("    --out=<outfile>   Write to a given output file instead of stdout");

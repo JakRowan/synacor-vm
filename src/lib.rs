@@ -8,6 +8,7 @@ extern crate serde;
 
 pub mod assembler;
 pub mod teleporter;
+pub mod vault;
 
 mod constants;
 mod error;
